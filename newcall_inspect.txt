@@ -1,0 +1,30 @@
+WO-033948791:
+  WIP Aging: 1
+  New Call Created: "Previous"
+  StartDate: "46111"
+  Current Job Status Timestamp: "46111"
+  Status: "Engineer Assignment Pending"
+WO-033950640:
+  WIP Aging: 1
+  New Call Created: "New"
+  StartDate: "46111"
+  Current Job Status Timestamp: "46111"
+  Status: "Partner Cust Delay - Customer Not Responded"
+WO-033950956:
+  WIP Aging: 1
+  New Call Created: "New"
+  StartDate: "46111"
+  Current Job Status Timestamp: "46111"
+  Status: "Partner Parts Hold"
+WO-033951432:
+  WIP Aging: 1
+  New Call Created: "New"
+  StartDate: "46111"
+  Current Job Status Timestamp: "46111"
+  Status: "Engineer Assignment Pending"
+WO-033955685:
+  WIP Aging: 1
+  New Call Created: "New"
+  StartDate: "46111"
+  Current Job Status Timestamp: "46111"
+  Status: "Engineer Assignment Pending"

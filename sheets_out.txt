@@ -1,0 +1,3 @@
+SHEETS: Pivot, Data
+Sheet "Pivot" has 5 rows. Primary columns: Count of Ticket No, Column Labels, __EMPTY
+Sheet "Data" has 166 rows. Primary columns: Work Location, Ticket No, Case Id

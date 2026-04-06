@@ -1,0 +1,25 @@
+======= DATA SIZES =======
+Flex Data Rows: 166
+Yesterday's Call Plan Rows: 57
+Expected Today's Call Plan Rows: 57
+
+======= UNIQUE TICKETS =======
+Unique Flex WOs: 166
+Unique Yest WOs: 57
+Unique Expected WOs: 52
+
+======= 1. DROPPED TICKETS RETAINED IN EXPECTED? =======
+  Missing from flex: WO-033796468 | Yest Morning: request to cancel | Exp M.Status: request to cancel
+
+======= 2. MISSING TICKETS FROM FLEX TO EXPECTED =======
+
+======= 3. WIP AGING LOGIC BEHAVIOR =======
+Aging mismatch pending! WO: WO-033866724, Yest: 6, Expected (31st): 8
+Aging mismatch pending! WO: WO-033912374, Yest: 3, Expected (31st): 5
+
+======= 4. NEW ROWS RULES EXPECTATION (Blank at generation) =======
+
+======= SUMMARY OF PROBLEM STATEMENTS =======
+1. 1 tickets in Expected output DO NOT exist in today's Flex WIP report.
+2. 2 pending tickets did not follow the 'yesterday + 1' aging rule.
+3. 13 new tickets somehow have the 'Morning Status' field filled out natively in the expected file (implying the operator fills them BEFORE finalizing the output).

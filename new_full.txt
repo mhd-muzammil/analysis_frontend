@@ -1,0 +1,14 @@
+WO | FlexWIP | ExpWIP | NewCallCreated | Status | Segment
+WO-033948791 | Flex:1 | Exp:1 | NewCall:Previous | Status:Engineer Assignment Pending | Seg:Install
+WO-033950640 | Flex:1 | Exp:1 | NewCall:New | Status:Partner Cust Delay - Customer Not Responded | Seg:print
+WO-033950956 | Flex:1 | Exp:0 | NewCall:New | Status:Partner Parts Hold | Seg:Pc
+WO-033951432 | Flex:1 | Exp:0 | NewCall:New | Status:Engineer Assignment Pending | Seg:print
+WO-033952927 | Flex:1 | Exp:0 | NewCall:New | Status:Engineer Assignment Pending | Seg:print
+WO-033955685 | Flex:1 | Exp:0 | NewCall:New | Status:Engineer Assignment Pending | Seg:Install
+WO-033957291 | Flex:1 | Exp:0 | NewCall:New | Status:Partner Parts Hold | Seg:Pc
+WO-033958854 | Flex:1 | Exp:0 | NewCall:New | Status:Engineer Assignment Pending | Seg:print
+WO-033959006 | Flex:1 | Exp:0 | NewCall:New | Status:Engineer Assignment Pending | Seg:Pc
+WO-033959254 | Flex:1 | Exp:0 | NewCall:New | Status:Visit Estimate | Seg:Trade
+WO-033961350 | Flex:1 | Exp:0 | NewCall:New | Status:Engineer Assignment Pending | Seg:Install
+WO-033961847 | Flex:1 | Exp:0 | NewCall:New | Status:Engineer Assignment Pending | Seg:Install
+WO-033962197 | Flex:1 | Exp:0 | NewCall:New | Status:Engineer Assignment Pending | Seg:Install

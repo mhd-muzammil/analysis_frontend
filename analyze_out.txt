@@ -1,0 +1,32 @@
+======= DATA SIZES =======
+Flex Data Rows: 5
+Yesterday's Call Plan Rows: 57
+Expected Today's Call Plan Rows: 57
+
+======= EXPECTED COLUMNS =======
+Month, Ticket No, Case Id, Product, WIP Aging, Location, Segment, Morning Status, Evening Status, Current Status-TAT, Engg., Contact no., Parts
+
+======= UNIQUE TICKETS =======
+Unique Flex WOs: 1
+Unique Yest WOs: 57
+Unique Expected WOs: 52
+
+======= 1. DROPPED TICKETS RETAINED IN EXPECTED? =======
+WOs in Expected but NOT in Flex: 52
+
+======= 2. MISSING TICKETS FROM FLEX TO EXPECTED =======
+Chennai WOs in Flex but NOT in Expected: 0
+
+======= 3. WIP AGING LOGIC BEHAVIOR =======
+Aging mismatch pending! WO: WO-033866724, Yest: 6, Expected (31st): 8
+Aging mismatch pending! WO: WO-033912374, Yest: 3, Expected (31st): 5
+Pending rows with aging != yesterday+1: 2
+
+======= 4. NEW ROWS - BLANK VALUES EXPECTATION =======
+New rows total: 13
+New rows with Morning Status pre-filled: 13
+
+======= SUMMARY OF PROBLEM STATEMENTS =======
+1. There are 52 tickets in the expected output that do NOT exist in the Flex WIP report.
+2. 2 pending tickets did not follow the 'yesterday + 1' aging rule.
+3. 13 new tickets somehow have the 'Morning Status' field filled out natively in the expected file, which contradicts the rule that they start blank.

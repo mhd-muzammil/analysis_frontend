@@ -1,0 +1,117 @@
+═══════════════════════════════════════════════
+ PART 1: DIAGNOSING GENERATED FILE
+═══════════════════════════════════════════════
+
+Generated sheets: Open Call, Summary, Dropped
+Generated row count: 51
+
+Generated Row 1 (first data row):
+{
+  "Month": 46108,
+  "Ticket No": "WO-033942242",
+  "Case Id": 5157473076,
+  "Product": "HP P24v G5 FHD Value Monitor",
+  "WIP Aging": "",
+  "Location": "St.George",
+  "Segment": "PC",
+  "Morning Status": "Part Pending",
+  "Evening Status": "",
+  "Current Status-TAT": "Partner Parts Hold",
+  "Engg.": "",
+  "Contact no.": "9444741414",
+  "Parts": ""
+}
+
+Generated Row 2:
+{
+  "Month": "",
+  "Ticket No": "WO-033947132",
+  "Case Id": 5157556191,
+  "Product": "HP Smart Tank 580 All-in-One Printer",
+  "WIP Aging": "",
+  "Location": "Thirumudivakkam",
+  "Segment": "print",
+  "Morning Status": "Actionable",
+  "Evening Status": "",
+  "Current Status-TAT": "Engineer Assignment Pending",
+  "Engg.": "Lava",
+  "Contact no.": "7904493334",
+  "Parts": ""
+}
+
+WIP Aging analysis (first 10):
+  WO-033942242: WIP Aging="" (type: string)
+  WO-033947132: WIP Aging="" (type: string)
+  WO-033940514: WIP Aging="" (type: string)
+  WO-033931405: WIP Aging="" (type: string)
+  WO-033946148: WIP Aging="" (type: string)
+  WO-033944833: WIP Aging="" (type: string)
+  WO-033940434: WIP Aging="" (type: string)
+  WO-033718165: WIP Aging="" (type: string)
+  WO-033861578: WIP Aging="" (type: string)
+  WO-033866781: WIP Aging="" (type: string)
+
+Rows with empty/NaN WIP Aging: 51 out of 51
+
+═══════════════════════════════════════════════
+ PART 2: FLEX XLSX PARSING (as browser does)
+═══════════════════════════════════════════════
+
+Flex sheets: Pivot, Data
+First sheet name: "Pivot"
+First sheet row count: 5
+First sheet column headers: Count of Ticket No, Column Labels, __EMPTY, __EMPTY_1, __EMPTY_2, __EMPTY_3, __EMPTY_4, __EMPTY_5, __EMPTY_6, __EMPTY_7
+Sample row: {
+  "Count of Ticket No": "Row Labels",
+  "Column Labels": "   4 to 24Hr (SBD)",
+  "__EMPTY": "  24 to 48Hr (NBD)",
+  "__EMPTY_1": "  48 to 72Hr (2BD)",
+  "__EMPTY_2": " 3 to 5 Days",
+  "__EMPTY_3": " 6 to 10 Days",
+  "__EMPTY_4": "11 to 15 Days",
+  "__EMPTY_5": "15 to 30 Days",
+  "__EMPTY_6": "30+ Days",
+  "__EMPTY_7": "Grand Total"
+}
+
+"Data" sheet row count: 166
+"Data" sheet columns: Work Location, Ticket No, Case Id, Current Remarks, WIP Aging, WIP Aging Category, Status, HP Owner, HP Action Owner, Current Status Aging, Current Job Status Timestamp, Current Status Aging Category, Engg Sch Start Date Time, Engg Sch End Date Time, Engg Sch Date, Status Category, Is MSL Location, WIP Changed From Morning Report, New Call Created, Warranty, Cluster, WO OTC Code, Product Name, Product Line CD, Product Line Name, Work Order Type, Product Serial No, Product Line Description, Business Segment, FSE, Workflow Name, Customer Pincode, Customer City, Customer State, ASP Name, Partner Accept, Problem Resolution, Repair Class, Delay Code, RC DC Updated By, Call Source, PGU_Name, IS Premium, StartDate, StartTime, Call Status, Is CTR, Product Type, Customer Type, Product Number, Call Classification, ASP City, ASP State, Customer Hold in CRM, Parts Hold Count, Engg Visit Count, Activity With Highest, Delay Remarks, Delay Owner, Call SLA Compliance, Call SLA Target, Is Part Call, City Tier Pincode, Distance Travelled, Distance Remarks, Distance L/M - 30 Days, Onsite / Walk In, Handling Hours (SLA), Customer Name, Customer Address , Customer Email Id, RCAMessage Board- Created On, RCA Message  Posted By, RCA Message, Duration In Minutes, Partner/FCT call Customer, FCT To Call Customer, Parter/FCT call Customer Ageing, RSE, Region, CISS_Phase, Part Status, FLEX_Shipout_Report_Status.
+
+═══════════════════════════════════════════════
+ PART 3: YESTERDAY XLSX PARSING (as browser does)
+═══════════════════════════════════════════════
+
+Yesterday sheets: pivot, Sheet1, Open Call, Sheet2, BOD _ EOD, BOD - EOD -1, Sheet3
+Detected "Open Call" sheet: "Open Call"
+Yesterday row count: 57
+Yesterday columns: Month, Ticket No, Case Id, Product, WIP Aging, Location, Segment, Morning Status, Evening Status, Current Status-TAT, Engg., Contact no., Parts
+Sample yesterday row: {
+  "Month": "2026-03-03T18:29:50.000Z",
+  "Ticket No": "WO-033657830",
+  "Case Id": 5156348638,
+  "Product": "HP Smart Tank 530 Wireless All-in-One",
+  "WIP Aging": 25,
+  "Location": "Madhanandhapuram",
+  "Segment": "Trade",
+  "Morning Status": "additional part",
+  "Evening Status": "need to cancel",
+  "Current Status-TAT": "PCA Assy",
+  "Engg.": "sriram",
+  "Contact no.": 9791272922,
+  "Parts": "need to cancel"
+}
+
+WO rows found: 57
+  WO-033657830: WIP Aging = 25 (type: number), parseInt = 25
+  WO-033718165: WIP Aging = 20 (type: number), parseInt = 20
+  WO-033737937: WIP Aging = 19 (type: number), parseInt = 19
+  WO-033795030: WIP Aging = 15 (type: number), parseInt = 15
+  WO-033796468: WIP Aging = 15 (type: number), parseInt = 15
+
+═══════════════════════════════════════════════
+ PART 4: SIMULATE ENGINE (exact browser flow)
+═══════════════════════════════════════════════
+
+Detected format: csv
+Detected cities: 
+Chennai WOs in first sheet: 0
