@@ -12,7 +12,7 @@ import {
 import { processCallPlan } from '../lib/engine';
 import type { ClassifiedRow } from '../lib/types';
 import { MORNING_STATUS_OPTIONS } from '../lib/types';
-import { uploadFile, exportCallPlan as apiExportCallPlan, listFiles, type ApiRow, type FileListItem } from '../api/client';
+import { uploadFile, exportCallPlan as apiExportCallPlan, listFiles, type ApiRow } from '../api/client';
 
 export default function ReviewView() {
   const {
@@ -41,10 +41,8 @@ export default function ReviewView() {
   const [flexFile, setFlexFile] = useState<File | null>(null);
   const [yestFile, setYestFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [showImport, setShowImport] = useState(!result && rows.length === 0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [uploadHistory, setUploadHistory] = useState<FileListItem[]>([]);
   
   // Interactivity State
   const [activeDetail, setActiveDetail] = useState<{ label: string; items: string[] } | null>(null);
@@ -98,12 +96,12 @@ export default function ReviewView() {
   };
 
   const handleGenerate = () => {
-    if (!flexData || !yesterdayData) return; setIsProcessing(true);
+    if (!flexData || !yesterdayData) return;
     setTimeout(() => {
       try {
         const res = processCallPlan(flexData, yesterdayData, selectedCity, new Date(reportDate));
         setResult(res); setRows(res.all); setDroppedRows(res.dropped); setShowImport(false);
-      } catch (err: any) { setError(err.message); } finally { setIsProcessing(false); }
+      } catch (err: any) { setError(err.message); }
     }, 400);
   };
 
@@ -120,7 +118,7 @@ export default function ReviewView() {
   };
 
   const loadHistory = async () => {
-    try { setUploadHistory(await listFiles(undefined, undefined, username)); } catch {}
+    try { await listFiles(undefined, undefined, username); } catch { /* ignored */ }
   };
 
   const handleAddManualRow = () => {
