@@ -4,6 +4,7 @@ import ReviewView from './components/ReviewView';
 import LoginView from './components/LoginView';
 import { Activity, LogOut, User, RefreshCw } from 'lucide-react';
 
+
 function App() {
   const { step, isLoggedIn, username, logout } = useStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
