@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useStore } from './store/useStore';
+import { useStore, isSyncPending } from './store/useStore';
 import ReviewView from './components/ReviewView';
 import LoginView from './components/LoginView';
 import { Activity, LogOut, User, RefreshCw } from 'lucide-react';
@@ -7,6 +7,23 @@ import { Activity, LogOut, User, RefreshCw } from 'lucide-react';
 function App() {
   const { step, isLoggedIn, username, logout } = useStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Periodically fetch the workspace state from the backend to automatically show others' updates
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoggedIn) {
+      interval = setInterval(() => {
+        // Skip background sync if the network sync is running, OR user is actively typing in an input
+        if (isSyncPending) return;
+        const activeElem = document.activeElement;
+        if (activeElem?.tagName === 'INPUT' || activeElem?.tagName === 'SELECT' || activeElem?.tagName === 'TEXTAREA') {
+          return; // Wait until they finish typing and click away to prevent overwriting their cursor positioning
+        }
+        useStore.getState().restoreFromCloud().catch(err => console.error("Silent Polling error", err));
+      }, 5000); // 5 sec interval for fast real-time feel
+    }
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

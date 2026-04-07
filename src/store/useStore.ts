@@ -182,6 +182,9 @@ export const useStore = create<AppState>()(
   )
 );
 
+// Flag to prevent polling while pushing changes
+export let isSyncPending = false;
+
 // Setup background auto-sync hook
 let syncTimeout: NodeJS.Timeout;
 useStore.subscribe((state, prevState) => {
@@ -205,9 +208,15 @@ useStore.subscribe((state, prevState) => {
         prevState.flexData !== state.flexData ||
         prevState.result !== state.result
      ) {
+        // A user edit happened
+        isSyncPending = true;
         clearTimeout(syncTimeout);
         syncTimeout = setTimeout(() => {
-           syncWorkspace(dataToSync).catch(err => console.error("Auto Sync Error:", err));
+           syncWorkspace(dataToSync)
+             .catch(err => console.error("Auto Sync Error:", err))
+             .finally(() => {
+                isSyncPending = false;
+             });
         }, 1500); 
      }
   }
