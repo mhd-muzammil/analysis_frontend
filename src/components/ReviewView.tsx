@@ -1104,7 +1104,7 @@ export default function ReviewView() {
                   </p>
                 </div>
               ) : (
-                uploadHistory.map((file, idx) => (
+                uploadHistory.map((file) => (
                   <div
                     key={file.id}
                     className="group p-5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 rounded-2xl transition-all duration-300 flex items-center justify-between"
