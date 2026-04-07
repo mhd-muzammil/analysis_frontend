@@ -160,3 +160,16 @@ export async function getFileDetail(id: number): Promise<UploadedFileInfo> {
 export async function getHistory(): Promise<FileListItem[]> {
   return apiFetch<FileListItem[]>('/history/');
 }
+
+// ── Workspace State Synchronization ──
+export async function syncWorkspace(state: any): Promise<{status: string}> {
+  return apiFetch<{status: string}>('/workspace/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(state),
+  });
+}
+
+export async function getWorkspace(): Promise<any> {
+    return apiFetch<any>('/workspace/');
+}

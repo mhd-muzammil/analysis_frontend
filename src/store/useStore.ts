@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AppStep, ClassifiedRow, ProcessingResult } from '../lib/types';
 import { DEFAULT_ENGINEERS } from '../lib/types';
 import { isValidWO } from '../lib/engine';
+import { getWorkspace, syncWorkspace } from '../api/client';
 
 interface AppState {
   // Navigation
@@ -49,6 +50,9 @@ interface AppState {
 
   // Reset
   reset: () => void;
+
+  // Cloud Sync
+  restoreFromCloud: () => Promise<void>;
 }
 
 const today = new Date().toISOString().split('T')[0];
@@ -137,6 +141,24 @@ export const useStore = create<AppState>()(
           droppedRows: [],
           activeTab: 'all',
         }),
+
+      restoreFromCloud: async () => {
+        try {
+          const workspace = await getWorkspace();
+          if (workspace && Object.keys(workspace).length > 0) {
+            set((state) => ({
+              ...state,
+              ...workspace,
+              // don't overwrite local auth variables
+              isLoggedIn: state.isLoggedIn,
+              username: state.username,
+              step: state.step,
+            }));
+          }
+        } catch (error) {
+          console.error("Failed to restore from cloud", error);
+        }
+      },
     }),
     {
       name: 'opencall-storage', // unique name
@@ -162,3 +184,36 @@ export const useStore = create<AppState>()(
     }
   )
 );
+
+// Setup background auto-sync hook
+let syncTimeout: NodeJS.Timeout;
+useStore.subscribe((state, prevState) => {
+  if (state.isLoggedIn) {
+     // only sync the partialize data essentially
+     const dataToSync = {
+        flexData: state.flexData,
+        yesterdayData: state.yesterdayData,
+        availableCities: state.availableCities,
+        selectedCity: state.selectedCity,
+        reportDate: state.reportDate,
+        result: state.result,
+        rows: state.rows,
+        droppedRows: state.droppedRows,
+        activeTab: state.activeTab,
+        engineers: state.engineers,
+     };
+
+     // extremely simple check if anything changed (Zustand creates new references on changes)
+     if (
+        prevState.rows !== state.rows ||
+        prevState.droppedRows !== state.droppedRows ||
+        prevState.flexData !== state.flexData ||
+        prevState.result !== state.result
+     ) {
+        clearTimeout(syncTimeout);
+        syncTimeout = setTimeout(() => {
+           syncWorkspace(dataToSync).catch(err => console.error("Auto Sync Error:", err));
+        }, 1500); // 1.5 second debounce
+     }
+  }
+});

@@ -22,10 +22,15 @@ const LoginView: React.FC = () => {
     setError('');
 
     // Simulate login
-    setTimeout(() => {
+    setTimeout(async () => {
       if (VALID_USERS[username] && VALID_USERS[username] === password) {
         saveUsername(username);
         setLoggedIn(true);
+        try {
+           await useStore.getState().restoreFromCloud();
+        } catch (e) {
+           console.error("Cloud error", e);
+        }
         setStep('review');
       } else {
         setError('Invalid username or password');
