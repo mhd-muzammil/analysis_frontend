@@ -163,10 +163,7 @@ export const useStore = create<AppState>()(
     {
       name: 'opencall-storage', // unique name
       storage: createJSONStorage(() => localStorage), // use localStorage
-      // We can selectively persist if needed, but for now we persist everything
-      // as the user wants the "old data" maintained.
       partialize: (state) => ({
-        // We persist analysis data
         flexData: state.flexData,
         yesterdayData: state.yesterdayData,
         availableCities: state.availableCities,
@@ -177,9 +174,9 @@ export const useStore = create<AppState>()(
         droppedRows: state.droppedRows,
         activeTab: state.activeTab,
         engineers: state.engineers,
-        // We do NOT necessarily need to persist step: 'login' if they want to re-login
-        // but we'll persist the username if we want it to be sticky
         username: state.username,
+        isLoggedIn: state.isLoggedIn,
+        step: state.step,
       }),
     }
   )
@@ -189,7 +186,6 @@ export const useStore = create<AppState>()(
 let syncTimeout: NodeJS.Timeout;
 useStore.subscribe((state, prevState) => {
   if (state.isLoggedIn) {
-     // only sync the partialize data essentially
      const dataToSync = {
         flexData: state.flexData,
         yesterdayData: state.yesterdayData,
@@ -203,7 +199,6 @@ useStore.subscribe((state, prevState) => {
         engineers: state.engineers,
      };
 
-     // extremely simple check if anything changed (Zustand creates new references on changes)
      if (
         prevState.rows !== state.rows ||
         prevState.droppedRows !== state.droppedRows ||
@@ -213,7 +208,7 @@ useStore.subscribe((state, prevState) => {
         clearTimeout(syncTimeout);
         syncTimeout = setTimeout(() => {
            syncWorkspace(dataToSync).catch(err => console.error("Auto Sync Error:", err));
-        }, 1500); // 1.5 second debounce
+        }, 1500); 
      }
   }
 });

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useStore } from './store/useStore';
 import ReviewView from './components/ReviewView';
 import LoginView from './components/LoginView';
@@ -5,6 +6,17 @@ import { Activity, LogOut, User } from 'lucide-react';
 
 function App() {
   const { step, isLoggedIn, username, logout } = useStore();
+
+  // Periodically fetch the workspace state from the backend to keep all users in sync
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isLoggedIn) {
+      interval = setInterval(() => {
+        useStore.getState().restoreFromCloud().catch(err => console.error("Polling error", err));
+      }, 10000); // 10 seconds polling to sync data
+    }
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
 
   return (
     <div className="min-h-screen text-gray-100 font-sans pb-12">
