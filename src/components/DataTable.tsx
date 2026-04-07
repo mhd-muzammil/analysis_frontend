@@ -1,8 +1,28 @@
-import { useState } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { ClassifiedRow } from '../lib/types';
 import { COLUMNS, MORNING_STATUS_OPTIONS } from '../lib/types';
 import { useStore } from '../store/useStore';
-import { Search, X, Plus, Info } from 'lucide-react';
+import { Search, X, Plus, Info, Filter, Check, SortAsc, SortDesc } from 'lucide-react';
+
+const COLUMN_KEY_MAP: Record<string, keyof ClassifiedRow> = {
+  'Month': 'month',
+  'Ticket No': 'ticketNo',
+  'Case Id': 'caseId',
+  'WO OTC Code': 'woOtcCode',
+  'Product': 'product',
+  'WIP Aging': 'wipAging',
+  'Location': 'location',
+  'Segment': 'segment',
+  'HP Owner': 'hpOwner',
+  'Flex Status': 'flexStatus',
+  'Morning Report': 'morningStatus',
+  'Evening Report': 'eveningStatus',
+  'Current Status-TAT': 'currentStatusTAT',
+  'Engg.': 'engg',
+  'Contact no.': 'contactNo',
+  'Parts': 'parts',
+  'WIP Changed': 'wipChanged'
+};
 
 interface DataTableProps {
   data: ClassifiedRow[];
@@ -13,18 +33,110 @@ interface DataTableProps {
 export default function DataTable({ data, isDroppedTab, onAddRow }: DataTableProps) {
   const { updateRow, engineers, selectedCity } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Excel Filter State
+  const [sortConfig, setSortConfig] = useState<{ key: keyof ClassifiedRow; direction: 'asc' | 'desc' } | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, Set<string>>>({});
+  const [activeFilterColumn, setActiveFilterColumn] = useState<string | null>(null);
+  const [filterSearchQuery, setFilterSearchQuery] = useState('');
+  const filterRef = useRef<HTMLDivElement>(null);
 
-  const filteredData = data.filter(row => {
-    const query = searchQuery.toLowerCase();
-    return (
-      row.ticketNo.toLowerCase().includes(query) ||
-      (row.woOtcCode && row.woOtcCode.toLowerCase().includes(query)) ||
-      row.caseId.toLowerCase().includes(query) ||
-      row.location.toLowerCase().includes(query) ||
-      row.product.toLowerCase().includes(query) ||
-      (row.engg && row.engg.toLowerCase().includes(query))
-    );
-  });
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setActiveFilterColumn(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const processedData = useMemo(() => {
+    let result = data;
+
+    // 1. Global Search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(row => (
+        row.ticketNo.toLowerCase().includes(query) ||
+        (row.woOtcCode && row.woOtcCode.toLowerCase().includes(query)) ||
+        row.caseId.toLowerCase().includes(query) ||
+        row.location.toLowerCase().includes(query) ||
+        row.product.toLowerCase().includes(query) ||
+        (row.engg && row.engg.toLowerCase().includes(query))
+      ));
+    }
+
+    // 2. Column Filters
+    Object.entries(columnFilters).forEach(([colName, selectedValues]) => {
+      if (selectedValues.size > 0) {
+        const key = COLUMN_KEY_MAP[colName];
+        if (key) {
+          result = result.filter(row => {
+            const val = String(row[key] || '');
+            return selectedValues.has(val);
+          });
+        }
+      }
+    });
+
+    // 3. Sorting
+    if (sortConfig) {
+      result = [...result].sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        
+        if (aVal === bVal) return 0;
+        if (aVal === null || aVal === undefined || aVal === '') return 1;
+        if (bVal === null || bVal === undefined || bVal === '') return -1;
+        
+        let comparison = 0;
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+           comparison = aVal - bVal;
+        } else {
+           comparison = String(aVal).localeCompare(String(bVal));
+        }
+        return sortConfig.direction === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return result;
+  }, [data, searchQuery, columnFilters, sortConfig]);
+
+  const filteredData = processedData; // Keep original reference name
+
+  const handleFilterToggle = (colName: string, value: string) => {
+    setColumnFilters(prev => {
+      const current = new Set(prev[colName] || new Set());
+      if (current.has(value)) current.delete(value);
+      else current.add(value);
+      return { ...prev, [colName]: current };
+    });
+  };
+
+  const handleSelectAll = (colName: string, values: string[]) => {
+    setColumnFilters(prev => {
+       const current = prev[colName];
+       if (current && current.size === values.length) {
+         // Deselect all
+         const updated = { ...prev };
+         delete updated[colName];
+         return updated;
+       } else {
+         // Select all
+         return { ...prev, [colName]: new Set(values) };
+       }
+    });
+  };
+
+  const getUniqueValuesForColumn = (colName: string) => {
+    const key = COLUMN_KEY_MAP[colName];
+    if (!key) return [];
+    // Only get unique values from currently filtered data EXCEPT the column we are filtering on to allow wider selections.
+    // For true Excel behavior, we get unique values from the base data.
+    const vals = data.map(r => String(r[key] || ''));
+    return Array.from(new Set(vals)).sort();
+  };
 
   if (data.length === 0 && !searchQuery) {
     return (
@@ -118,7 +230,71 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
               <tr>
                 <th className="px-4 py-3">Type</th>
                 {COLUMNS.map((col) => (
-                  <th key={col} className="px-4 py-3 border-l border-gray-700/50">{col}</th>
+                  <th key={col} className="px-4 py-3 border-l border-gray-700/50 relative isolate">
+                    <div className="flex items-center justify-between gap-2 group/th">
+                      <span>{col}</span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setFilterSearchQuery(''); setActiveFilterColumn(activeFilterColumn === col ? null : col); }}
+                        className={`p-1 rounded transition-colors ${columnFilters[col]?.size > 0 ? 'bg-blue-500/20 text-blue-400 opacity-100' : 'text-gray-500 hover:bg-gray-700 hover:text-white opacity-0 group-hover/th:opacity-100'}`}
+                      >
+                        <Filter className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    {activeFilterColumn === col && (
+                      <div ref={filterRef} className="absolute top-10 left-0 w-64 bg-gray-950/95 backdrop-blur-3xl border border-gray-700 shadow-2xl rounded-xl z-[150] overflow-hidden flex flex-col font-sans normal-case tracking-normal animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-2 border-b border-gray-800 space-y-1">
+                          <button onClick={() => setSortConfig({ key: COLUMN_KEY_MAP[col], direction: 'asc' })} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 rounded-lg transition-colors">
+                            <SortAsc className="h-3.5 w-3.5" /> Sort A to Z
+                          </button>
+                          <button onClick={() => setSortConfig({ key: COLUMN_KEY_MAP[col], direction: 'desc' })} className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 rounded-lg transition-colors">
+                            <SortDesc className="h-3.5 w-3.5" /> Sort Z to A
+                          </button>
+                        </div>
+                        <div className="p-2 border-b border-gray-800">
+                          <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-3 w-3 text-gray-500" />
+                            <input 
+                              type="text" 
+                              value={filterSearchQuery}
+                              onChange={(e) => setFilterSearchQuery(e.target.value)}
+                              placeholder="Search..." 
+                              className="w-full bg-gray-900 border border-gray-800 rounded-lg py-1.5 pl-8 pr-3 text-xs text-gray-200 placeholder:text-gray-600 focus:border-blue-500 transition-colors focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-1 max-h-[250px] overflow-y-auto p-2 space-y-0.5 custom-scrollbar">
+                           <div className="group">
+                             <label className="flex items-center gap-2.5 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
+                               <input type="checkbox" className="hidden" checked={columnFilters[col]?.size === getUniqueValuesForColumn(col).length} onChange={() => handleSelectAll(col, getUniqueValuesForColumn(col))} />
+                               <div className={`h-4 w-4 rounded shrink-0 border flex items-center justify-center transition-colors ${columnFilters[col]?.size === getUniqueValuesForColumn(col).length ? 'bg-blue-500 border-blue-500' : 'bg-gray-900 border-gray-600 group-hover:border-blue-400'}`}>
+                                  {columnFilters[col]?.size === getUniqueValuesForColumn(col).length && <Check className="h-3 w-3 text-white" />}
+                               </div>
+                               <span className="font-semibold text-gray-200">(Select All)</span>
+                             </label>
+                           </div>
+                           {getUniqueValuesForColumn(col).filter(v => v.toLowerCase().includes(filterSearchQuery.toLowerCase())).map(val => {
+                             const isSelected = columnFilters[col]?.has(val);
+                             return (
+                               <div key={val} className="group">
+                                 <label className="flex items-center gap-2.5 px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-lg cursor-pointer transition-colors">
+                                   <input type="checkbox" className="hidden" checked={isSelected || false} onChange={() => handleFilterToggle(col, val)} />
+                                   <div className={`h-4 w-4 rounded shrink-0 border flex items-center justify-center transition-colors ${isSelected ? 'bg-blue-500 border-blue-500' : 'bg-gray-900 border-gray-600 group-hover:border-blue-400'}`}>
+                                      {isSelected && <Check className="h-3 w-3 text-white" />}
+                                   </div>
+                                   <span className="truncate">{val || '(Blank)'}</span>
+                                 </label>
+                               </div>
+                             );
+                           })}
+                        </div>
+                        <div className="p-2 border-t border-gray-800 flex justify-end gap-2 bg-gray-900/50">
+                          <button onClick={() => setActiveFilterColumn(null)} className="px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white transition-colors">Cancel</button>
+                          <button onClick={() => setActiveFilterColumn(null)} className="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-lg shadow-blue-900/20 transition-all">OK</button>
+                        </div>
+                      </div>
+                    )}
+                  </th>
                 ))}
               </tr>
             </thead>
