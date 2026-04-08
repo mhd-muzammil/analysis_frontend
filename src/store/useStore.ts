@@ -250,9 +250,7 @@ useStore.subscribe((state, prevState) => {
     if (changed) {
       clearTimeout(syncTimeout);
       syncTimeout = setTimeout(() => {
-        const dataToSync = {
-          flexData: state.flexData,
-          yesterdayData: state.yesterdayData,
+        const dataToSync: Record<string, any> = {
           availableCities: state.availableCities,
           selectedCity: state.selectedCity,
           reportDate: state.reportDate,
@@ -263,6 +261,13 @@ useStore.subscribe((state, prevState) => {
           engineers: state.engineers,
         };
 
+        if (prevState.flexData !== state.flexData) {
+          dataToSync.flexData = state.flexData;
+        }
+        if (prevState.yesterdayData !== state.yesterdayData) {
+          dataToSync.yesterdayData = state.yesterdayData;
+        }
+
         if (realtimeClient.isConnected) {
           // Push via WebSocket (instant broadcast to all clients)
           realtimeClient.sendWorkspaceUpdate(dataToSync);
@@ -272,7 +277,7 @@ useStore.subscribe((state, prevState) => {
             console.error('REST sync error:', err),
           );
         }
-      }, 300);
+      }, 50);
     }
   }
 });
