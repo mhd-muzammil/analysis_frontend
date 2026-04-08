@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
+import { loginApi } from '../api/auth';
+import { realtimeClient } from '../api/websocket';
 import { Lock, User, LogIn, Activity, AlertCircle } from 'lucide-react';
-
-// Hardcoded users - add/remove users here
-const VALID_USERS: Record<string, string> = {
-  admin: 'admin',
-  saleem: 'saleem123',
-  operator: 'operator123',
-};
 
 const LoginView: React.FC = () => {
   const { setLoggedIn, setStep, setUsername: saveUsername } = useStore();
@@ -16,27 +11,33 @@ const LoginView: React.FC = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
 
-    // Simulate login
-    setTimeout(async () => {
-      if (VALID_USERS[username] && VALID_USERS[username] === password) {
-        saveUsername(username);
-        setLoggedIn(true);
-        try {
-           await useStore.getState().restoreFromCloud();
-        } catch (e) {
-           console.error("Cloud error", e);
-        }
-        setStep('review');
-      } else {
-        setError('Invalid username or password');
-        setIsSubmitting(false);
+    try {
+      const data = await loginApi(username, password);
+
+      // Set auth state
+      saveUsername(data.user.username);
+      setLoggedIn(true);
+
+      // Connect WebSocket for real-time sync
+      realtimeClient.connect();
+
+      // Restore cloud workspace state
+      try {
+        await useStore.getState().restoreFromCloud();
+      } catch (e) {
+        console.error('Cloud restore error', e);
       }
-    }, 800);
+
+      setStep('review');
+    } catch (err: any) {
+      setError(err.message || 'Invalid username or password');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -45,7 +46,7 @@ const LoginView: React.FC = () => {
         {/* Glow Effects */}
         <div className="absolute -top-12 -left-12 w-32 h-32 bg-blue-600/20 blur-3xl rounded-full" />
         <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full" />
-        
+
         <div className="glass-panel relative z-10 p-8 rounded-2xl border border-gray-800 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="p-3 bg-blue-500/10 rounded-xl mb-4">
@@ -103,17 +104,15 @@ const LoginView: React.FC = () => {
               {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <>
-                  <span className="flex items-center">
-                    Sign In
-                    <LogIn className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </>
+                <span className="flex items-center">
+                  Sign In
+                  <LogIn className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </span>
               )}
             </button>
 
             <div className="flex items-center justify-center text-xs text-gray-500">
-              <p>Locked securely with AES encryption</p>
+              <p>Secured with JWT authentication</p>
             </div>
           </form>
         </div>

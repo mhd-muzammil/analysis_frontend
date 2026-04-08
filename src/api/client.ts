@@ -1,9 +1,9 @@
 /**
  * API client for Django backend communication.
- * All Excel processing and storage happens on the backend.
+ * All requests are authenticated via JWT.
  */
 
-const API_BASE = '/api';
+import { authFetch, API_BASE } from './auth';
 
 // ── Types for API responses ──
 export interface UploadedFileInfo {
@@ -73,7 +73,7 @@ export interface FileListItem {
 
 // ── Helper ──
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const resp = await fetch(`${API_BASE}${url}`, options);
+  const resp = await authFetch(`${API_BASE}${url}`, options);
   if (!resp.ok) {
     const body = await resp.text();
     throw new Error(`API error ${resp.status}: ${body}`);
@@ -87,13 +87,11 @@ export async function uploadFile(
   fileType: 'flex_wip' | 'call_plan',
   city: string = 'Chennai',
   reportDate?: string,
-  uploadedBy: string = 'admin'
 ): Promise<UploadResponse> {
   const form = new FormData();
   form.append('file', file);
   form.append('file_type', fileType);
   form.append('city', city);
-  form.append('uploaded_by', uploadedBy);
   if (reportDate) form.append('report_date', reportDate);
 
   return apiFetch<UploadResponse>('/upload/', {
@@ -107,7 +105,7 @@ export async function processCallPlan(
   flexFileId: number,
   callplanFileId: number | null,
   city: string,
-  reportDate?: string
+  reportDate?: string,
 ): Promise<ProcessResponse> {
   const body: Record<string, unknown> = {
     flex_file_id: flexFileId,
@@ -127,9 +125,9 @@ export async function processCallPlan(
 export async function exportCallPlan(
   rows: ApiRow[],
   city: string,
-  reportDate?: string
+  reportDate?: string,
 ): Promise<Blob> {
-  const resp = await fetch(`${API_BASE}/export/`, {
+  const resp = await authFetch(`${API_BASE}/export/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rows, city, report_date: reportDate }),
@@ -142,7 +140,11 @@ export async function exportCallPlan(
 }
 
 // ── List uploaded files ──
-export async function listFiles(fileType?: string, city?: string, uploadedBy?: string): Promise<FileListItem[]> {
+export async function listFiles(
+  fileType?: string,
+  city?: string,
+  uploadedBy?: string,
+): Promise<FileListItem[]> {
   const params = new URLSearchParams();
   if (fileType) params.set('file_type', fileType);
   if (city) params.set('city', city);
@@ -162,8 +164,10 @@ export async function getHistory(): Promise<FileListItem[]> {
 }
 
 // ── Workspace State Synchronization ──
-export async function syncWorkspace(state: any): Promise<{status: string}> {
-  return apiFetch<{status: string}>('/workspace/', {
+export async function syncWorkspace(
+  state: any,
+): Promise<{ status: string }> {
+  return apiFetch<{ status: string }>('/workspace/', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(state),
@@ -171,5 +175,5 @@ export async function syncWorkspace(state: any): Promise<{status: string}> {
 }
 
 export async function getWorkspace(): Promise<any> {
-    return apiFetch<any>('/workspace/');
+  return apiFetch<any>('/workspace/');
 }

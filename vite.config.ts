@@ -10,6 +10,11 @@ export default defineConfig({
         target: "https://analysis.systimus.in",
         changeOrigin: true,
       },
+      "/ws": {
+        target: "wss://analysis.systimus.in",
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 });

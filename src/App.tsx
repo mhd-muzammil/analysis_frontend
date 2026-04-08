@@ -1,29 +1,24 @@
 import { useEffect, useState } from 'react';
-import { useStore, isSyncPending } from './store/useStore';
+import { useStore } from './store/useStore';
 import ReviewView from './components/ReviewView';
 import LoginView from './components/LoginView';
-import { Activity, LogOut, User, RefreshCw } from 'lucide-react';
+import { realtimeClient } from './api/websocket';
+import { getAccessToken } from './api/auth';
+import { Activity, LogOut, User, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
 
 function App() {
-  const { step, isLoggedIn, username, logout } = useStore();
+  const { step, isLoggedIn, username, logout, wsConnected } = useStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Periodically fetch the workspace state from the backend to automatically show others' updates
+  // Connect WebSocket when user is logged in (handles page refresh)
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isLoggedIn) {
-      interval = setInterval(() => {
-        // Skip background sync if the network sync is running, OR user is actively typing in an input
-        if (isSyncPending) return;
-        const activeElem = document.activeElement;
-        if (activeElem?.tagName === 'INPUT' || activeElem?.tagName === 'SELECT' || activeElem?.tagName === 'TEXTAREA') {
-          return; // Wait until they finish typing and click away to prevent overwriting their cursor positioning
-        }
-        useStore.getState().restoreFromCloud().catch(err => console.error("Silent Polling error", err));
-      }, 5000); // 5 sec interval for fast real-time feel
+    if (isLoggedIn && getAccessToken()) {
+      realtimeClient.connect();
     }
-    return () => clearInterval(interval);
+    return () => {
+      // Don't disconnect on unmount during HMR, only on actual unload
+    };
   }, [isLoggedIn]);
 
   const handleRefresh = async () => {
@@ -60,6 +55,23 @@ function App() {
               </div>
 
               <div className="flex items-center gap-4">
+                {/* Real-time connection indicator */}
+                <div
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
+                    wsConnected
+                      ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                  }`}
+                  title={wsConnected ? 'Real-time sync active' : 'Reconnecting...'}
+                >
+                  {wsConnected ? (
+                    <Wifi className="h-3.5 w-3.5" />
+                  ) : (
+                    <WifiOff className="h-3.5 w-3.5" />
+                  )}
+                  {wsConnected ? 'Live' : 'Offline'}
+                </div>
+
                 <button
                   onClick={handleRefresh}
                   disabled={isRefreshing}
