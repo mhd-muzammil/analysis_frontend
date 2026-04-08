@@ -172,7 +172,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
   };
 
   // Broadcast editing activity (debounced)
-  const activityTimer = useRef<ReturnType<typeof setTimeout>>();
+  const activityTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const broadcastEditing = useCallback((detail: string) => {
     realtimeClient.sendActivity({ action: 'editing', detail });
     clearTimeout(activityTimer.current);
