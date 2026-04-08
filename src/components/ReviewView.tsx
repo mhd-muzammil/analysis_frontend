@@ -151,7 +151,7 @@ export default function ReviewView() {
       }
       setFlexData(data, detectCities(data));
       setFlexFile(file);
-      uploadFile(file, "flex_wip", selectedCity, reportDate, username).catch(
+      uploadFile(file, "flex_wip", selectedCity, reportDate).catch(
         () => {},
       );
     } catch {
@@ -169,7 +169,7 @@ export default function ReviewView() {
       if (!name) throw new Error("Sheet missing.");
       setYesterdayData(parsed.data[name]);
       setYestFile(file);
-      uploadFile(file, "call_plan", selectedCity, reportDate, username).catch(
+      uploadFile(file, "call_plan", selectedCity, reportDate).catch(
         () => {},
       );
     } catch (err: any) {
