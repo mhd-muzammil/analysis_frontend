@@ -272,7 +272,7 @@ useStore.subscribe((state, prevState) => {
             console.error('REST sync error:', err),
           );
         }
-      }, 800);
+      }, 50);
     }
   }
 });

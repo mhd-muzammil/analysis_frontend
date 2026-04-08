@@ -1,16 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useStore } from './store/useStore';
 import ReviewView from './components/ReviewView';
 import LoginView from './components/LoginView';
 import { realtimeClient } from './api/websocket';
 import { getAccessToken } from './api/auth';
-import { Activity, LogOut, User, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Activity, LogOut, User, Wifi, WifiOff } from 'lucide-react';
 
 
 function App() {
   const { step, isLoggedIn, username, logout, wsConnected } = useStore();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
   // Connect WebSocket when user is logged in (handles page refresh)
   useEffect(() => {
     if (isLoggedIn && getAccessToken()) {
@@ -21,15 +19,7 @@ function App() {
     };
   }, [isLoggedIn]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await useStore.getState().restoreFromCloud();
-    } catch (e) {
-      console.error(e);
-    }
-    setTimeout(() => setIsRefreshing(false), 500);
-  };
+
 
   return (
     <div className="min-h-screen text-gray-100 font-sans pb-12">
@@ -72,15 +62,7 @@ function App() {
                   {wsConnected ? 'Live' : 'Offline'}
                 </div>
 
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg border border-transparent transition-all"
-                  title="Pull latest changes from server"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Sync
-                </button>
+
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/60 rounded-lg border border-gray-700/50">
                   <User className="h-4 w-4 text-blue-400" />
                   <span className="text-sm font-medium text-gray-300 capitalize">{username}</span>
