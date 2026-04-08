@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { ClassifiedRow } from '../lib/types';
 import { COLUMNS, MORNING_STATUS_OPTIONS } from '../lib/types';
 import { useStore } from '../store/useStore';
+import { realtimeClient } from '../api/websocket';
 import { Search, X, Plus, Info, Filter, Check, SortAsc, SortDesc } from 'lucide-react';
 
 const COLUMN_KEY_MAP: Record<string, keyof ClassifiedRow> = {
@@ -170,12 +171,24 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
     }
   };
 
+  // Broadcast editing activity (debounced)
+  const activityTimer = useRef<ReturnType<typeof setTimeout>>();
+  const broadcastEditing = useCallback((detail: string) => {
+    realtimeClient.sendActivity({ action: 'editing', detail });
+    clearTimeout(activityTimer.current);
+    // Revert to "viewing" after 3s of inactivity
+    activityTimer.current = setTimeout(() => {
+      realtimeClient.sendActivity({ action: 'viewing' });
+    }, 3000);
+  }, []);
+
   const handleChange = (
     ticketNo: string,
     field: keyof ClassifiedRow,
     value: string | number
   ) => {
     updateRow(ticketNo, field, value);
+    broadcastEditing(`${field} on ${ticketNo}`);
   };
 
   return (

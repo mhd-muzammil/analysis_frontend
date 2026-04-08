@@ -30,6 +30,7 @@ import {
   type ApiRow,
   type FileListItem,
 } from "../api/client";
+import { realtimeClient } from "../api/websocket";
 
 export default function ReviewView() {
   const {
@@ -151,6 +152,7 @@ export default function ReviewView() {
       }
       setFlexData(data, detectCities(data));
       setFlexFile(file);
+      realtimeClient.sendActivity({ action: 'uploading', detail: 'Flex WIP' });
       uploadFile(file, "flex_wip", selectedCity, reportDate).catch(
         () => {},
       );
@@ -169,6 +171,7 @@ export default function ReviewView() {
       if (!name) throw new Error("Sheet missing.");
       setYesterdayData(parsed.data[name]);
       setYestFile(file);
+      realtimeClient.sendActivity({ action: 'uploading', detail: 'Call Plan' });
       uploadFile(file, "call_plan", selectedCity, reportDate).catch(
         () => {},
       );
@@ -180,6 +183,7 @@ export default function ReviewView() {
   const handleGenerate = () => {
     if (!flexData || !yesterdayData) return;
     setIsProcessing(true);
+    realtimeClient.sendActivity({ action: 'processing', detail: 'Generating call plan' });
     setTimeout(() => {
       try {
         const res = processCallPlan(
@@ -215,6 +219,7 @@ export default function ReviewView() {
 
   const handleExportCallPlan = async () => {
     try {
+      realtimeClient.sendActivity({ action: 'exporting', detail: 'Call Plan' });
       exportCallPlanXLSX(rows, droppedRows, selectedCity, reportDate);
       const apiRows: ApiRow[] = rows.map((r) => ({
         ticket_no: r.ticketNo,

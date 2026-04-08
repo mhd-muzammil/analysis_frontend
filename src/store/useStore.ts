@@ -4,8 +4,16 @@ import type { AppStep, ClassifiedRow, ProcessingResult } from '../lib/types';
 import { DEFAULT_ENGINEERS } from '../lib/types';
 import { isValidWO } from '../lib/engine';
 import { getWorkspace, syncWorkspace } from '../api/client';
-import { realtimeClient, type WSMessage } from '../api/websocket';
+import { realtimeClient, SESSION_ID, type WSMessage } from '../api/websocket';
 import { clearTokens } from '../api/auth';
+
+export interface ActiveUser {
+  username: string;
+  session_id: string;
+  action: string;
+  detail?: string;
+  last_seen: number; // timestamp
+}
 
 interface AppState {
   // Navigation
@@ -22,6 +30,10 @@ interface AppState {
   // WebSocket connection status
   wsConnected: boolean;
   setWsConnected: (connected: boolean) => void;
+
+  // Active users / presence
+  activeUsers: ActiveUser[];
+  setActiveUsers: (users: ActiveUser[]) => void;
 
   // Upload state
   flexData: Record<string, unknown>[] | null;
@@ -74,7 +86,6 @@ export const useStore = create<AppState>()(
       setLoggedIn: (isLoggedIn) => set({ isLoggedIn }),
       setUsername: (username) => set({ username }),
       logout: () => {
-        // Disconnect WebSocket and clear tokens
         realtimeClient.disconnect();
         clearTokens();
         set({
@@ -82,13 +93,15 @@ export const useStore = create<AppState>()(
           username: '',
           step: 'login',
           wsConnected: false,
-          // Note: Analysis data is NOT cleared on logout to fulfill the user request
-          // "naa login logout pannalum data maintaine agitte irukanum"
+          activeUsers: [],
         });
       },
 
       wsConnected: false,
       setWsConnected: (connected) => set({ wsConnected: connected }),
+
+      activeUsers: [],
+      setActiveUsers: (users) => set({ activeUsers: users }),
 
       flexData: null,
       yesterdayData: null,
@@ -170,11 +183,11 @@ export const useStore = create<AppState>()(
             set((state) => ({
               ...state,
               ...workspace,
-              // don't overwrite local auth/ws variables
               isLoggedIn: state.isLoggedIn,
               username: state.username,
               step: state.step,
               wsConnected: state.wsConnected,
+              activeUsers: state.activeUsers,
             }));
           }
         } catch (error) {
@@ -207,24 +220,67 @@ export const useStore = create<AppState>()(
 // ── Flag to suppress re-broadcast while applying remote update ──
 let applyingRemote = false;
 
+// ── Prune stale active users (no activity for 15 seconds) ──
+setInterval(() => {
+  const now = Date.now();
+  const current = useStore.getState().activeUsers;
+  const alive = current.filter((u) => now - u.last_seen < 15000);
+  if (alive.length !== current.length) {
+    useStore.getState().setActiveUsers(alive);
+  }
+}, 5000);
+
 // ── WebSocket message handler ──
-// Listens for workspace updates from other clients and applies them
 realtimeClient.onMessage((msg: WSMessage) => {
   if (msg.type === 'workspace_updated') {
-    const currentUser = useStore.getState().username;
-    // Only apply if from another user (avoid echo)
-    if (msg.source && msg.source !== currentUser && msg.payload) {
+    // Use session_id for echo suppression — allows same user on different devices to sync
+    if (msg.session_id === SESSION_ID) return;
+
+    if (msg.payload) {
       applyingRemote = true;
       useStore.setState((state) => ({
         ...state,
         ...msg.payload,
-        // Preserve local auth/nav state
+        // Preserve local auth/nav/presence state
         isLoggedIn: state.isLoggedIn,
         username: state.username,
         step: state.step,
         wsConnected: state.wsConnected,
+        activeUsers: state.activeUsers,
       }));
       applyingRemote = false;
+    }
+  }
+
+  if (msg.type === 'presence_update' && msg.payload) {
+    // Full list of connected users from server
+    const users: ActiveUser[] = (msg.payload.users || []).map((u: any) => ({
+      ...u,
+      last_seen: Date.now(),
+    }));
+    useStore.getState().setActiveUsers(users);
+  }
+
+  if (msg.type === 'user_activity') {
+    if (msg.session_id === SESSION_ID) return;
+
+    // Update the activity for this specific user session
+    const incoming: ActiveUser = {
+      username: msg.source || 'unknown',
+      session_id: msg.session_id || '',
+      action: msg.payload?.action || 'viewing',
+      detail: msg.payload?.detail,
+      last_seen: Date.now(),
+    };
+
+    const current = useStore.getState().activeUsers;
+    const idx = current.findIndex((u) => u.session_id === incoming.session_id);
+    if (idx >= 0) {
+      const updated = [...current];
+      updated[idx] = incoming;
+      useStore.getState().setActiveUsers(updated);
+    } else {
+      useStore.getState().setActiveUsers([...current, incoming]);
     }
   }
 });
@@ -232,12 +288,14 @@ realtimeClient.onMessage((msg: WSMessage) => {
 // Track WebSocket connection status
 realtimeClient.onStatusChange((connected) => {
   useStore.getState().setWsConnected(connected);
+  if (!connected) {
+    useStore.getState().setActiveUsers([]);
+  }
 });
 
 // ── Background auto-sync: push changes via WebSocket ──
 let syncTimeout: ReturnType<typeof setTimeout>;
 useStore.subscribe((state, prevState) => {
-  // Don't push if we're applying a remote update
   if (applyingRemote) return;
 
   if (state.isLoggedIn) {
@@ -269,10 +327,8 @@ useStore.subscribe((state, prevState) => {
         }
 
         if (realtimeClient.isConnected) {
-          // Push via WebSocket (instant broadcast to all clients)
           realtimeClient.sendWorkspaceUpdate(dataToSync);
         } else {
-          // Fallback to REST API if WebSocket is disconnected
           syncWorkspace(dataToSync).catch((err) =>
             console.error('REST sync error:', err),
           );

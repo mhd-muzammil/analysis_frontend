@@ -1,7 +1,7 @@
 /**
  * WebSocket client for real-time synchronization.
  * Connects to Django Channels with JWT authentication.
- * Features: auto-reconnect with exponential backoff, token refresh on reconnect, heartbeat.
+ * Features: auto-reconnect, exponential backoff, heartbeat, presence/typing.
  */
 
 import { getAccessToken, refreshAccessToken } from './auth';
@@ -9,7 +9,15 @@ import { getAccessToken, refreshAccessToken } from './auth';
 // Resolve WS base URL: in production, use env var; in dev, use Vite proxy (same origin)
 const WS_BASE = import.meta.env.VITE_WS_BASE || '';
 
-export type WSEventType = 'workspace_updated' | 'record_changed' | 'pong';
+// Unique session ID per tab — allows same user on multiple devices to sync
+export const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+export type WSEventType =
+  | 'workspace_updated'
+  | 'record_changed'
+  | 'pong'
+  | 'presence_update'
+  | 'user_activity';
 
 export interface WSMessage {
   type: WSEventType;
@@ -17,6 +25,7 @@ export interface WSMessage {
   action?: 'create' | 'update' | 'delete';
   model?: string;
   source?: string;
+  session_id?: string;
 }
 
 type MessageHandler = (msg: WSMessage) => void;
@@ -60,12 +69,10 @@ class RealtimeClient {
 
     let url: string;
     if (WS_BASE) {
-      // Production: explicit backend WS URL (e.g., wss://analysis.systimus.in)
-      url = `${WS_BASE}/ws/sync/?token=${token}`;
+      url = `${WS_BASE}/ws/sync/?token=${token}&session_id=${SESSION_ID}`;
     } else {
-      // Dev: same origin via Vite proxy
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      url = `${proto}//${window.location.host}/ws/sync/?token=${token}`;
+      url = `${proto}//${window.location.host}/ws/sync/?token=${token}&session_id=${SESSION_ID}`;
     }
 
     try {
@@ -101,7 +108,6 @@ class RealtimeClient {
 
       if (this.intentionalClose) return;
 
-      // 4001 = auth rejected by server — refresh token then reconnect
       if (event.code === 4001) {
         this._reconnectWithFreshToken();
       } else {
@@ -116,10 +122,11 @@ class RealtimeClient {
 
   /**
    * Send a message to the server.
+   * Automatically attaches session_id.
    */
   send(data: Record<string, any>) {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(data));
+      this.ws.send(JSON.stringify({ ...data, session_id: SESSION_ID }));
     }
   }
 
@@ -130,6 +137,16 @@ class RealtimeClient {
     this.send({
       type: 'workspace_update',
       payload,
+    });
+  }
+
+  /**
+   * Send a user activity event (e.g., editing a field).
+   */
+  sendActivity(activity: { action: string; detail?: string }) {
+    this.send({
+      type: 'user_activity',
+      payload: activity,
     });
   }
 
@@ -150,9 +167,6 @@ class RealtimeClient {
     this._notifyStatus(false);
   }
 
-  /**
-   * Register a handler for incoming WebSocket messages.
-   */
   onMessage(handler: MessageHandler): () => void {
     this.messageHandlers.push(handler);
     return () => {
@@ -160,9 +174,6 @@ class RealtimeClient {
     };
   }
 
-  /**
-   * Register a handler for connection status changes.
-   */
   onStatusChange(handler: StatusHandler): () => void {
     this.statusHandlers.push(handler);
     return () => {
@@ -192,7 +203,6 @@ class RealtimeClient {
       return;
     }
 
-    // Exponential backoff: 1s, 2s, 4s, 8s... capped at 30s
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     this.reconnectAttempts++;
 

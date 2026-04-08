@@ -5,6 +5,7 @@ import LoginView from './components/LoginView';
 import { realtimeClient } from './api/websocket';
 import { getAccessToken } from './api/auth';
 import { Activity, LogOut, User, Wifi, WifiOff } from 'lucide-react';
+import ActiveUsersIndicator from './components/ActiveUsersIndicator';
 
 
 function App() {
@@ -45,6 +46,9 @@ function App() {
               </div>
 
               <div className="flex items-center gap-4">
+                {/* Active users / presence */}
+                <ActiveUsersIndicator />
+
                 {/* Real-time connection indicator */}
                 <div
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${
@@ -61,7 +65,6 @@ function App() {
                   )}
                   {wsConnected ? 'Live' : 'Offline'}
                 </div>
-
 
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/60 rounded-lg border border-gray-700/50">
                   <User className="h-4 w-4 text-blue-400" />
