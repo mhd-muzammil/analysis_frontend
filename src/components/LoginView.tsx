@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { loginApi } from '../api/auth';
 import { realtimeClient } from '../api/websocket';
-import { Lock, User, LogIn, Activity, AlertCircle } from 'lucide-react';
+import { Lock, User, LogIn, Activity, AlertCircle, Sun, Moon } from 'lucide-react';
 
 const LoginView: React.FC = () => {
-  const { setLoggedIn, setStep, setUsername: saveUsername } = useStore();
+  const { setLoggedIn, setStep, setUsername: saveUsername, theme, toggleTheme } = useStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -41,7 +41,20 @@ const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center p-4">
+    <div className="min-h-[80vh] flex items-center justify-center p-4 relative">
+      {/* Theme toggle — top right */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2.5 rounded-xl bg-gray-800/60 border border-gray-700/50 hover:border-gray-600 transition-all duration-300 focus:outline-none"
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {theme === 'dark' ? (
+          <Sun className="h-5 w-5 text-amber-400" />
+        ) : (
+          <Moon className="h-5 w-5 text-blue-400" />
+        )}
+      </button>
+
       <div className="w-full max-w-md relative">
         {/* Glow Effects */}
         <div className="absolute -top-12 -left-12 w-32 h-32 bg-blue-600/20 blur-3xl rounded-full" />

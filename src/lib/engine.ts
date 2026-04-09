@@ -244,7 +244,7 @@ export function processCallPlan(
         hpOwner: flexRow.hpOwner,
         flexStatus: flexRow.flexStatus,
         wipChanged: 'New',
-        morningStatus: 'Actionable', // Default for new rows
+        morningStatus: 'To be scheduled', // Default for new rows
         eveningStatus: '',
         currentStatusTAT: '',
         engg: '',

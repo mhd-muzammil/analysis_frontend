@@ -12,14 +12,38 @@
   --color-blue-400: #60a5fa;
 }
 
-/* Base styles for a rich, premium dark/glass aesthetic */
+/* ── Light theme: remap grays so dark-mode utilities "just work" ── */
+[data-theme="light"] {
+  --color-gray-100: #111827;
+  --color-gray-200: #1e293b;
+  --color-gray-300: #374151;
+  --color-gray-400: #64748b;
+  --color-gray-500: #94a3b8;
+  --color-gray-600: #cbd5e1;
+  --color-gray-700: #e2e8f0;
+  --color-gray-800: #ffffff;
+  --color-gray-900: #f8fafc;
+  --color-blue-400: #3b82f6;
+  --color-green-500: #16a34a;
+  --color-amber-500: #d97706;
+  --color-red-500: #dc2626;
+}
+
+/* Base styles for a rich, premium aesthetic */
 @layer base {
   body {
     @apply bg-gray-900 text-gray-100 antialiased min-h-screen selection:bg-blue-500/30 font-sans;
-    background-image: 
+    background-image:
       radial-gradient(circle at 15% 50%, rgba(37, 99, 235, 0.08), transparent 25%),
       radial-gradient(circle at 85% 30%, rgba(34, 197, 94, 0.05), transparent 25%);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+}
+
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(37, 99, 235, 0.04), transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(34, 197, 94, 0.03), transparent 25%);
 }
 
 /* Custom scrollbar for data tables */
@@ -36,16 +60,30 @@
   @apply bg-gray-600 rounded-full hover:bg-gray-500 transition-colors;
 }
 
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 9999px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 /* Glassmorphism utilities */
 @layer utilities {
   .glass-panel {
     @apply bg-gray-800/60 backdrop-blur-md border border-gray-700/50 shadow-xl;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
   }
-  
+
   .glass-input {
     @apply bg-gray-900/50 border border-gray-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm outline-none px-3 py-2 rounded-md;
   }
-
 
   .interactive-cell {
     @apply hover:bg-gray-800/50 transition-colors duration-200 cursor-pointer;
@@ -64,8 +102,17 @@
   }
 }
 
-/* Input styles for forms matching dark mode */
+/* Input color scheme */
 input[type="text"], input[type="date"], select {
   color-scheme: dark;
 }
 
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="date"],
+[data-theme="light"] select {
+  color-scheme: light;
+}
+
+[data-theme="light"] .glass-panel {
+  @apply bg-white/70 border-gray-200/80 shadow-lg;
+}

@@ -4,12 +4,18 @@ import ReviewView from './components/ReviewView';
 import LoginView from './components/LoginView';
 import { realtimeClient } from './api/websocket';
 import { getAccessToken } from './api/auth';
-import { Activity, LogOut, User, Wifi, WifiOff } from 'lucide-react';
+import { Activity, LogOut, User, Wifi, WifiOff, Sun, Moon } from 'lucide-react';
 import ActiveUsersIndicator from './components/ActiveUsersIndicator';
 
 
 function App() {
-  const { step, isLoggedIn, username, logout, wsConnected } = useStore();
+  const { step, isLoggedIn, username, logout, wsConnected, theme, toggleTheme } = useStore();
+
+  // Apply theme to document root
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
   // Connect WebSocket when user is logged in (handles page refresh)
   useEffect(() => {
     if (isLoggedIn && getAccessToken()) {
@@ -65,6 +71,27 @@ function App() {
                   )}
                   {wsConnected ? 'Live' : 'Offline'}
                 </div>
+
+                {/* Theme toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="relative w-13 h-7 rounded-full border border-gray-700/50 bg-gray-800/60 transition-all duration-300 hover:border-gray-600 focus:outline-none"
+                  title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  <span
+                    className={`absolute top-0.75 left-0.75 w-5.5 h-5.5 rounded-full shadow-md flex items-center justify-center transition-all duration-500 ease-in-out ${
+                      theme === 'dark'
+                        ? 'translate-x-0 bg-blue-500/20 text-blue-300'
+                        : 'translate-x-5.5 bg-amber-400 text-white'
+                    }`}
+                  >
+                    {theme === 'dark' ? (
+                      <Moon className="h-3.5 w-3.5" />
+                    ) : (
+                      <Sun className="h-3.5 w-3.5" />
+                    )}
+                  </span>
+                </button>
 
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-800/60 rounded-lg border border-gray-700/50">
                   <User className="h-4 w-4 text-blue-400" />

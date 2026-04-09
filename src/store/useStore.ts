@@ -27,6 +27,10 @@ interface AppState {
   setUsername: (username: string) => void;
   logout: () => void;
 
+  // Theme
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+
   // WebSocket connection status
   wsConnected: boolean;
   setWsConnected: (connected: boolean) => void;
@@ -96,6 +100,9 @@ export const useStore = create<AppState>()(
           activeUsers: [],
         });
       },
+
+      theme: 'dark',
+      toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
 
       wsConnected: false,
       setWsConnected: (connected) => set({ wsConnected: connected }),
@@ -199,6 +206,7 @@ export const useStore = create<AppState>()(
       name: 'opencall-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
+        theme: state.theme,
         flexData: state.flexData,
         yesterdayData: state.yesterdayData,
         availableCities: state.availableCities,
