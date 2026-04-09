@@ -166,7 +166,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
     switch (klass) {
       case 'PENDING': return 'border-l-4 border-l-amber-500/80 bg-amber-500/5 hover:bg-amber-500/10';
       case 'NEW': return 'border-l-4 border-l-green-500/80 bg-green-500/5 hover:bg-green-500/10';
-      case 'DROPPED': return 'border-l-4 border-l-red-500/80 bg-red-500/5 hover:bg-red-500/10 opacity-70';
+      case 'DROPPED': return 'border-l-4 border-l-red-500/80 bg-red-500/5 hover:bg-red-500/10';
       default: return 'hover:bg-gray-800/40 border-l-4 border-l-transparent';
     }
   };
@@ -226,7 +226,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
               Add WO
             </button>
           )}
-          <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold px-2 hidden sm:block">
+          <div className="text-xs uppercase tracking-widest text-gray-300 font-bold px-2 hidden sm:block">
             {filteredData.length} of {data.length} Rows Showing
           </div>
         </div>
@@ -239,8 +239,9 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
       ) : (
         <div className="w-full overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-gray-800/80 text-gray-400 font-medium sticky top-0 z-10 shadow-sm text-xs uppercase tracking-tight">
+            <thead className="bg-gray-800 text-gray-100 font-black sticky top-0 z-10 shadow-md text-[11px] uppercase tracking-wider">
               <tr>
+                <th className="px-4 py-3 w-12 text-center text-blue-400 sticky left-0 bg-gray-800 z-20 border-r border-gray-700/50">SN</th>
                 <th className="px-4 py-3">Type</th>
                 {COLUMNS.map((col) => (
                   <th key={col} className="px-4 py-3 border-l border-gray-700/50 relative isolate">
@@ -312,19 +313,22 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700/50">
-              {filteredData.map((row) => (
+              {filteredData.map((row, index) => (
                 <tr key={row.ticketNo} className={`transition-colors ${getRowClass(row.classification)}`}>
-                  <td className="px-4 py-3 font-semibold text-[10px] tracking-wider uppercase">
-                    {row.classification === 'PENDING' && <span className="text-amber-500">PENDING</span>}
-                    {row.classification === 'NEW' && <span className="text-green-500">NEW</span>}
-                    {row.classification === 'DROPPED' && <span className="text-red-500">CLOSED(OTB)</span>}
+                  <td className="px-4 py-3 text-center text-blue-400 font-mono text-xs font-bold border-r border-gray-700/50 sticky left-0 bg-[#0f172a] z-[5] shadow-[2px_0_10px_rgba(0,0,0,0.2)]">
+                    {index + 1}
+                  </td>
+                  <td className="px-4 py-3 font-bold text-xs tracking-wider uppercase">
+                    {row.classification === 'PENDING' && <span className="text-amber-400">PENDING</span>}
+                    {row.classification === 'NEW' && <span className="text-green-400">NEW</span>}
+                    {row.classification === 'DROPPED' && <span className="text-red-400">CLOSED(OTB)</span>}
                   </td>
 
-                  <td className="px-4 py-3 text-gray-400">{row.month || '-'}</td>
-                  <td className="px-4 py-3 font-mono text-gray-200">{row.ticketNo}</td>
-                  <td className="px-4 py-3 text-gray-300">{row.caseId}</td>
-                  <td className="px-4 py-3 text-purple-400 font-medium">{row.woOtcCode || '-'}</td>
-                  <td className="px-4 py-3 truncate max-w-[200px]" title={row.product}>{row.product}</td>
+                  <td className="px-4 py-3 text-gray-200">{row.month || '-'}</td>
+                  <td className="px-4 py-3 font-mono text-white font-bold">{row.ticketNo}</td>
+                  <td className="px-4 py-3 text-gray-100">{row.caseId}</td>
+                  <td className="px-4 py-3 text-purple-300 font-bold">{row.woOtcCode || '-'}</td>
+                  <td className="px-4 py-3 truncate max-w-[300px] text-gray-100 font-medium" title={row.product}>{row.product}</td>
 
                   <td className="px-4 py-3 text-center">
                     <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${row.wipAging > 5 ? 'bg-red-500/20 text-red-400' : 'bg-gray-700/50 text-gray-300'}`}>
@@ -343,9 +347,9 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
                     />
                   </td>
 
-                  <td className="px-4 py-3 text-blue-400 font-medium">{row.segment}</td>
-                  <td className="px-4 py-3 text-gray-300">{row.hpOwner || '-'}</td>
-                  <td className="px-4 py-3 text-gray-300 italic text-[11px]">{row.flexStatus || '-'}</td>
+                  <td className="px-4 py-3 text-blue-300 font-bold">{row.segment}</td>
+                  <td className="px-4 py-3 text-gray-100">{row.hpOwner || '-'}</td>
+                  <td className="px-4 py-3 text-gray-100 font-medium italic text-xs">{row.flexStatus || '-'}</td>
 
                   <td className="px-2 py-2">
                     <select
@@ -365,7 +369,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
                     </select>
                   </td>
 
-                  <td className="px-4 py-3 text-gray-500 italic">{row.eveningStatus || '-'}</td>
+                  <td className="px-4 py-3 text-gray-200 font-medium">{row.eveningStatus || '-'}</td>
 
                   <td className="px-2 py-2">
                     <input
@@ -373,7 +377,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
                       value={row.currentStatusTAT}
                       onChange={(e) => handleChange(row.ticketNo, 'currentStatusTAT', e.target.value)}
                       disabled={isDroppedTab}
-                      className="w-full min-w-[150px] bg-transparent border border-transparent hover:border-gray-600 focus:border-blue-500 focus:bg-gray-900 px-2 py-1 rounded transition-all disabled:opacity-50 text-[11px]"
+                      className="w-full min-w-[200px] bg-gray-900/50 border border-transparent hover:border-gray-500 focus:border-blue-500 focus:bg-gray-900 px-2 py-1.5 rounded transition-all disabled:opacity-50 text-xs text-gray-100 font-medium"
                     />
                   </td>
 
@@ -395,7 +399,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
                     </select>
                   </td>
 
-                  <td className="px-4 py-3 text-gray-300 font-mono text-[11px]">{row.contactNo}</td>
+                  <td className="px-4 py-3 text-gray-100 font-mono text-xs font-bold">{row.contactNo}</td>
 
                   <td className="px-2 py-2">
                     <input
@@ -404,14 +408,14 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
                       onChange={(e) => handleChange(row.ticketNo, 'parts', e.target.value)}
                       disabled={isDroppedTab}
                       placeholder="Parts info..."
-                      className="w-full min-w-[120px] bg-transparent border border-transparent hover:border-gray-600 focus:border-blue-500 focus:bg-gray-900 px-2 py-1 rounded transition-all disabled:opacity-50 text-[11px]"
+                      className="w-full min-w-[150px] bg-gray-900/50 border border-transparent hover:border-gray-500 focus:border-blue-500 focus:bg-gray-900 px-2 py-1.5 rounded transition-all disabled:opacity-50 text-xs text-gray-100 font-medium"
                     />
                   </td>
 
                   <td className="px-4 py-3 text-center text-xs">
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${row.wipChanged === 'Yes' ? 'bg-orange-500/20 text-orange-400' :
-                        row.wipChanged === 'New' ? 'bg-green-500/20 text-green-400' :
-                          'bg-gray-700/50 text-gray-400'
+                    <span className={`px-2 py-0.5 rounded-md text-xs font-black ${row.wipChanged === 'Yes' ? 'bg-orange-500/20 text-orange-300' :
+                        row.wipChanged === 'New' ? 'bg-green-500/20 text-green-300' :
+                          'bg-gray-700/50 text-gray-300'
                       }`}>
                       {row.wipChanged || '-'}
                     </span>
