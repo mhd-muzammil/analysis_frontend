@@ -101,7 +101,9 @@ export default function ReviewView() {
           .map((r) => r.ticketNo);
         break;
       case "Closed(OTB)":
-        items = droppedRows.map((r) => r.ticketNo);
+        items = activeRows
+          .filter((r) => r.morningStatus.toLowerCase() === "closed")
+          .map((r) => r.ticketNo);
         break;
     }
     if (items.length > 0) setActiveDetail({ label, items });
@@ -323,7 +325,7 @@ export default function ReviewView() {
     },
     {
       label: "Closed(OTB)",
-      value: result?.metrics.droppedCount || 0,
+      value: rows.filter((r) => r.morningStatus.toLowerCase() === "closed").length,
       icon: FileDown,
       color: "text-red-400",
       bg: "bg-red-500/10",
