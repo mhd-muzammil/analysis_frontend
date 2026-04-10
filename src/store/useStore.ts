@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AppStep, ClassifiedRow, ProcessingResult } from '../lib/types';
 import { DEFAULT_ENGINEERS } from '../lib/types';
 import { isValidWO } from '../lib/engine';
-import { getWorkspace, syncWorkspace } from '../api/client';
+import { getWorkspace, syncWorkspace, addManualWO, markClosedCall } from '../api/client';
 import { realtimeClient, SESSION_ID, type WSMessage } from '../api/websocket';
 import { clearTokens } from '../api/auth';
 
@@ -147,6 +147,31 @@ export const useStore = create<AppState>()(
             alert(`Work Order ${trimmedWO} already exists in the table.`);
             return state;
           }
+
+          // Save manual WO to DB
+          addManualWO({
+            ticket_no: trimmedWO,
+            case_id: row.caseId || '',
+            product: row.product || '',
+            wip_aging: row.wipAging || 0,
+            location: row.location || '',
+            segment: row.segment || '',
+            classification: row.classification || 'NEW',
+            morning_status: row.morningStatus || 'To be scheduled',
+            evening_status: row.eveningStatus || '',
+            engineer: row.engg || '',
+            contact_no: row.contactNo || '',
+            parts: row.parts || '',
+            month: row.month || '',
+            wo_otc_code: row.woOtcCode || '',
+            hp_owner: row.hpOwner || 'Manual',
+            flex_status: row.flexStatus || 'Manual Entry',
+            wip_changed: row.wipChanged || 'New',
+            current_status_tat: row.currentStatusTAT || '',
+            city: state.selectedCity !== 'all' ? state.selectedCity : 'Chennai',
+            report_date: state.reportDate,
+          }).catch((err) => console.error('Failed to save manual WO to DB:', err));
+
           return { rows: [row, ...state.rows] };
         }),
 
@@ -156,6 +181,41 @@ export const useStore = create<AppState>()(
             r.ticketNo.trim().toUpperCase() === ticketNo.trim().toUpperCase()
               ? { ...r, [field]: value }
               : r;
+
+          // If morning status is being changed to "Closed" or "Closed cancelled", copy to ClosedCall table
+          if (
+            field === 'morningStatus' &&
+            typeof value === 'string' &&
+            (value.toLowerCase() === 'closed' || value.toLowerCase() === 'closed cancelled')
+          ) {
+            const row = state.rows.find(
+              (r) => r.ticketNo.trim().toUpperCase() === ticketNo.trim().toUpperCase(),
+            );
+            if (row) {
+              markClosedCall({
+                ticket_no: row.ticketNo,
+                case_id: row.caseId || '',
+                product: row.product || '',
+                wip_aging: row.wipAging || 0,
+                location: row.location || '',
+                segment: row.segment || '',
+                classification: row.classification || 'PENDING',
+                morning_status: 'Closed',
+                evening_status: row.eveningStatus || '',
+                engineer: row.engg || '',
+                contact_no: row.contactNo || '',
+                parts: row.parts || '',
+                month: row.month || '',
+                wo_otc_code: row.woOtcCode || '',
+                hp_owner: row.hpOwner || '',
+                flex_status: row.flexStatus || '',
+                wip_changed: row.wipChanged || '',
+                current_status_tat: row.currentStatusTAT || '',
+                city: state.selectedCity !== 'all' ? state.selectedCity : 'Chennai',
+                report_date: state.reportDate,
+              }).catch((err) => console.error('Failed to save closed call to DB:', err));
+            }
+          }
 
           return {
             rows: state.rows.map(up),

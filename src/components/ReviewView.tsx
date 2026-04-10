@@ -27,6 +27,8 @@ import {
   uploadFile,
   exportCallPlan as apiExportCallPlan,
   listFiles,
+  createUploadSession,
+  saveAnalysis,
   type ApiRow,
   type FileListItem,
 } from "../api/client";
@@ -64,6 +66,7 @@ export default function ReviewView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [uploadHistory, setUploadHistory] = useState<FileListItem[]>([]);
+  const [sessionId, setSessionId] = useState<number | null>(null);
 
   // Interactivity State
   const [activeDetail, setActiveDetail] = useState<{
@@ -155,7 +158,19 @@ export default function ReviewView() {
       setFlexData(data, detectCities(data));
       setFlexFile(file);
       realtimeClient.sendActivity({ action: 'uploading', detail: 'Flex WIP' });
-      uploadFile(file, "flex_wip", selectedCity, reportDate).catch(
+
+      // Create upload session if not yet created, then upload with session_id
+      let sid = sessionId;
+      if (!sid) {
+        try {
+          const session = await createUploadSession(selectedCity, reportDate);
+          sid = session.id;
+          setSessionId(sid);
+        } catch {
+          // Session creation failed, upload without session
+        }
+      }
+      uploadFile(file, "flex_wip", selectedCity, reportDate, sid ?? undefined).catch(
         () => {},
       );
     } catch {
@@ -174,7 +189,19 @@ export default function ReviewView() {
       setYesterdayData(parsed.data[name]);
       setYestFile(file);
       realtimeClient.sendActivity({ action: 'uploading', detail: 'Call Plan' });
-      uploadFile(file, "call_plan", selectedCity, reportDate).catch(
+
+      // Create upload session if not yet created, then upload with session_id
+      let sid = sessionId;
+      if (!sid) {
+        try {
+          const session = await createUploadSession(selectedCity, reportDate);
+          sid = session.id;
+          setSessionId(sid);
+        } catch {
+          // Session creation failed, upload without session
+        }
+      }
+      uploadFile(file, "call_plan", selectedCity, reportDate, sid ?? undefined).catch(
         () => {},
       );
     } catch (err: any) {
@@ -198,6 +225,17 @@ export default function ReviewView() {
         setRows(res.all);
         setDroppedRows(res.dropped);
         setShowImport(false);
+
+        // Save analysis result to backend DB
+        saveAnalysis({
+          city: selectedCity !== 'all' ? selectedCity : 'Chennai',
+          report_date: reportDate,
+          session_id: sessionId ?? undefined,
+          total_count: res.metrics.finalCount,
+          pending_count: res.metrics.pendingCount,
+          new_count: res.metrics.newCount,
+          dropped_count: res.metrics.droppedCount,
+        }).catch((err) => console.error('Failed to save analysis to DB:', err));
       } catch (err: any) {
         setError(err.message);
       } finally {

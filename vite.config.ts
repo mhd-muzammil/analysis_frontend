@@ -7,11 +7,11 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://analysis.systimus.in",
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
       "/ws": {
-        target: "wss://analysis.systimus.in",
+        target: "ws://localhost:8000",
         ws: true,
         changeOrigin: true,
       },
