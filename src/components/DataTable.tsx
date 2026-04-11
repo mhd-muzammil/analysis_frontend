@@ -136,6 +136,11 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
     // Only get unique values from currently filtered data EXCEPT the column we are filtering on to allow wider selections.
     // For true Excel behavior, we get unique values from the base data.
     const vals = data.map(r => String(r[key] || ''));
+    // For Morning Report, merge with predefined options so all statuses always appear
+    if (colName === 'Morning Report') {
+      const allVals = new Set([...MORNING_STATUS_OPTIONS.filter(o => o !== ''), ...vals]);
+      return Array.from(allVals).sort();
+    }
     return Array.from(new Set(vals)).sort();
   };
 
