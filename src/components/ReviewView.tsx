@@ -386,77 +386,127 @@ export default function ReviewView() {
     },
     { label: "Open Calls", value: rows.length },
     {
-      label: "Actionable Calls",
+      label: "Actionable",
       value: rows.filter((r) => r.morningStatus.toLowerCase() === "actionable")
         .length,
     },
     {
-      label: "Planned Calls",
-      value: rows.filter((r) => r.engg && r.engg.trim() !== "").length,
-    },
-    {
-      label: "Closed Calls",
-      value: rows.filter((r) => r.morningStatus.toLowerCase() === "closed")
-        .length,
-    },
-    {
-      label: "Engg onsite",
-      value: rows.filter((r) => r.morningStatus.toLowerCase() === "engg onsite")
-        .length,
-    },
-    {
-      label: "To be schedule",
-      value: rows.filter(
-        (r) => r.morningStatus.toLowerCase() === "to be scheduled",
-      ).length,
-    },
-    {
-      label: "CX Reschedule Calls",
-      value: rows.filter(
-        (r) =>
-          r.morningStatus.toLowerCase() === "cx reschedule" ||
-          r.morningStatus.toLowerCase() === "cx pending",
-      ).length,
-    },
-    {
-      label: "SSC Pending Calls",
-      value: rows.filter((r) => r.morningStatus.toLowerCase() === "ssc pending")
-        .length,
-    },
-    {
-      label: "Elevate/Tech Support Calls",
-      value: rows.filter(
-        (r) => r.morningStatus.toLowerCase() === "elevate/tech support",
-      ).length,
-    },
-    {
-      label: "Under observation Calls",
-      value: rows.filter(
-        (r) => r.morningStatus.toLowerCase() === "under observation",
-      ).length,
-    },
-    {
-      label: "To be Yank",
-      value: rows.filter((r) => r.morningStatus.toLowerCase() === "to be yank")
-        .length,
-    },
-    {
-      label: "Closed cancelled",
-      value: rows.filter(
-        (r) => r.morningStatus.toLowerCase() === "closed cancelled",
-      ).length,
-    },
-    {
-      label: "Add.Part ordered",
+      label: "Additional Part",
       value: rows.filter(
         (r) => r.morningStatus.toLowerCase() === "additional part",
       ).length,
     },
     {
-      label: "To be Cancel",
-      value: rows.filter((r) =>
-        r.morningStatus.toLowerCase().includes("cancel"),
+      label: "CRT Pending",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "crt pending",
       ).length,
+    },
+    {
+      label: "CT Pending",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "ct pending",
+      ).length,
+    },
+    {
+      label: "CT Validation Pending",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "ct validation pending",
+      ).length,
+    },
+    {
+      label: "Cx Pending",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "cx pending",
+      ).length,
+    },
+    {
+      label: "Problem Resolution",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "problem resolution",
+      ).length,
+    },
+    {
+      label: "Part Order Pending",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "part order pending",
+      ).length,
+    },
+    {
+      label: "Need to Cancel",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "need to cancel",
+      ).length,
+    },
+    {
+      label: "Need to Cancel - Mail",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "need to cancel - mail",
+      ).length,
+    },
+    {
+      label: "Need to Yank",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "need to yank",
+      ).length,
+    },
+    {
+      label: "Part Pending",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "part pending",
+      ).length,
+    },
+    {
+      label: "To be Scheduled",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "to be scheduled",
+      ).length,
+    },
+    {
+      label: "Visit Estimate",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "visit estimate",
+      ).length,
+    },
+    {
+      label: "Visit Quote Customer",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "visit quote customer",
+      ).length,
+    },
+    {
+      label: "Yank",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "yank",
+      ).length,
+    },
+    {
+      label: "Under Observation",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "under observation",
+      ).length,
+    },
+    {
+      label: "Elevation Part Pending",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "elevation part pending",
+      ).length,
+    },
+    {
+      label: "Elevation - WP Pending",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "elevation - wp pending",
+      ).length,
+    },
+    {
+      label: "OTP",
+      value: rows.filter(
+        (r) => r.morningStatus.toLowerCase() === "otp",
+      ).length,
+    },
+    {
+      label: "Planned Calls",
+      value: rows.filter((r) => r.engg && r.engg.trim() !== "").length,
     },
     {
       label: "New calls",
