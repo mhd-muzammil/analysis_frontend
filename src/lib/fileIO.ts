@@ -108,7 +108,86 @@ export function exportSummaryXLSX(
   return filename;
 }
 
-// ── Export Call Plan to XLSX (Main Data & Closed OTB) ──
+// ── Build Pivot Table data: Morning Report (rows) × WIP Aging (cols) ──
+function buildPivotSheet(allRows: ClassifiedRow[]): (string | number)[][] {
+  // Collect all unique WIP Aging values and Morning Report statuses
+  const wipSet = new Set<number>();
+  const statusSet = new Set<string>();
+  const countMap: Record<string, Record<number | 'blank', number>> = {};
+
+  for (const row of allRows) {
+    const status = (row.morningStatus || '').trim();
+    const statusKey = status === '' ? '(blank)' : status;
+    const wip = row.wipAging ?? NaN;
+    const wipKey = isNaN(wip) ? 'blank' : wip;
+
+    statusSet.add(statusKey);
+    if (wipKey !== 'blank') wipSet.add(wipKey as number);
+
+    if (!countMap[statusKey]) countMap[statusKey] = {};
+    countMap[statusKey][wipKey] = (countMap[statusKey][wipKey] || 0) + 1;
+  }
+
+  // Sort WIP aging numerically, push (blank) to end
+  const wipCols: (number | 'blank')[] = [...wipSet].sort((a, b) => a - b);
+  // Check if any row had blank WIP
+  const hasBlankWip = allRows.some(r => r.wipAging === undefined || r.wipAging === null || isNaN(r.wipAging));
+  if (hasBlankWip) wipCols.push('blank');
+
+  // Sort statuses alphabetically, push (blank) to end
+  const statuses = [...statusSet].filter(s => s !== '(blank)').sort();
+  if (statusSet.has('(blank)')) statuses.push('(blank)');
+
+  const result: (string | number)[][] = [];
+
+  // Row 1: Segment filter label
+  result.push(['Segment', '(All)', '', ...Array(wipCols.length).fill('')]);
+
+  // Row 2: Empty spacer
+  result.push([]);
+
+  // Row 3: Title row
+  result.push(['Count of Ticket No', 'Column Labels', ...Array(wipCols.length).fill('')]);
+
+  // Row 4: Header row — "Row Labels", then each WIP aging value, then "Grand Total"
+  const headerRow: (string | number)[] = [
+    'Row Labels',
+    ...wipCols.map(w => w === 'blank' ? '(blank)' : w),
+    'Grand Total',
+  ];
+  result.push(headerRow);
+
+  // Data rows — one per Morning Report status
+  for (const status of statuses) {
+    const row: (string | number)[] = [status];
+    let rowTotal = 0;
+    for (const wip of wipCols) {
+      const count = countMap[status]?.[wip] || 0;
+      row.push(count > 0 ? count : '');
+      rowTotal += count;
+    }
+    row.push(rowTotal);
+    result.push(row);
+  }
+
+  // Grand Total row
+  const grandRow: (string | number)[] = ['Grand Total'];
+  let grandTotal = 0;
+  for (const wip of wipCols) {
+    let colSum = 0;
+    for (const status of statuses) {
+      colSum += countMap[status]?.[wip] || 0;
+    }
+    grandRow.push(colSum > 0 ? colSum : '');
+    grandTotal += colSum;
+  }
+  grandRow.push(grandTotal);
+  result.push(grandRow);
+
+  return result;
+}
+
+// ── Export Call Plan to XLSX (Main Data, Closed OTB & Pivot Table) ──
 export function exportCallPlanXLSX(
   rows: ClassifiedRow[],
   dropped: ClassifiedRow[],
@@ -138,6 +217,19 @@ export function exportCallPlanXLSX(
     ws2['!cols'] = wsOpen['!cols'];
     XLSX.utils.book_append_sheet(wb, ws2, 'Closed(OTB)');
   }
+
+  // 3. Pivot Table sheet — Morning Report × WIP Aging cross-tab
+  const pivotData = buildPivotSheet(rows);
+  const wsPivot = XLSX.utils.aoa_to_sheet(pivotData);
+
+  // Set column widths: first col wider for status labels, rest compact for numbers
+  const pivotColWidths: { wch: number }[] = [{ wch: 28 }];
+  for (let i = 1; i < (pivotData[3]?.length || 2); i++) {
+    pivotColWidths.push({ wch: i === (pivotData[3]?.length || 2) - 1 ? 12 : 6 });
+  }
+  wsPivot['!cols'] = pivotColWidths;
+
+  XLSX.utils.book_append_sheet(wb, wsPivot, 'Pivot Table');
 
   const filename = `${city}_${dateStr}_Call_Plan.xlsx`;
   XLSX.writeFile(wb, filename);
