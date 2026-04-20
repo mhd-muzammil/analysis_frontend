@@ -108,75 +108,89 @@ export function exportSummaryXLSX(
   return filename;
 }
 
-// ── Build Pivot Table data: Morning Report (rows) × WIP Aging (cols) ──
+// ── Build Pivot Table data: Segment + Morning Report (rows) × WIP Aging (cols) ──
 function buildPivotSheet(allRows: ClassifiedRow[]): (string | number)[][] {
-  // Collect all unique WIP Aging values and Morning Report statuses
+  // Collect all unique WIP Aging values, Segments, and Morning Report statuses
   const wipSet = new Set<number>();
-  const statusSet = new Set<string>();
-  const countMap: Record<string, Record<number | 'blank', number>> = {};
+  const segmentSet = new Set<string>();
+  // countMap[segment][status][wipKey] = count
+  const countMap: Record<string, Record<string, Record<number | 'blank', number>>> = {};
 
   for (const row of allRows) {
     const status = (row.morningStatus || '').trim();
     const statusKey = status === '' ? '(blank)' : status;
+    const segment = (row.segment || '').trim();
+    const segKey = segment === '' ? '(blank)' : segment;
     const wip = row.wipAging ?? NaN;
-    const wipKey = isNaN(wip) ? 'blank' : wip;
+    const wipKey: number | 'blank' = isNaN(wip) ? 'blank' : wip;
 
-    statusSet.add(statusKey);
+    segmentSet.add(segKey);
     if (wipKey !== 'blank') wipSet.add(wipKey as number);
 
-    if (!countMap[statusKey]) countMap[statusKey] = {};
-    countMap[statusKey][wipKey] = (countMap[statusKey][wipKey] || 0) + 1;
+    if (!countMap[segKey]) countMap[segKey] = {};
+    if (!countMap[segKey][statusKey]) countMap[segKey][statusKey] = {};
+    countMap[segKey][statusKey][wipKey] = (countMap[segKey][statusKey][wipKey] || 0) + 1;
   }
 
   // Sort WIP aging numerically, push (blank) to end
   const wipCols: (number | 'blank')[] = [...wipSet].sort((a, b) => a - b);
-  // Check if any row had blank WIP
   const hasBlankWip = allRows.some(r => r.wipAging === undefined || r.wipAging === null || isNaN(r.wipAging));
   if (hasBlankWip) wipCols.push('blank');
 
-  // Sort statuses alphabetically, push (blank) to end
-  const statuses = [...statusSet].filter(s => s !== '(blank)').sort();
-  if (statusSet.has('(blank)')) statuses.push('(blank)');
+  // Sorted segments and collect all statuses across all segments
+  const segments = [...segmentSet].filter(s => s !== '(blank)').sort();
+  if (segmentSet.has('(blank)')) segments.push('(blank)');
+
+  const allStatuses = new Set<string>();
+  for (const seg of segments) {
+    for (const st of Object.keys(countMap[seg] || {})) {
+      allStatuses.add(st);
+    }
+  }
+  const statuses = [...allStatuses].filter(s => s !== '(blank)').sort();
+  if (allStatuses.has('(blank)')) statuses.push('(blank)');
 
   const result: (string | number)[][] = [];
 
-  // Row 1: Segment filter label
-  result.push(['Segment', '(All)', '', ...Array(wipCols.length).fill('')]);
+  // Row 1: Title row
+  result.push(['Count of Ticket No', '', 'Column Labels', ...Array(wipCols.length).fill('')]);
 
-  // Row 2: Empty spacer
-  result.push([]);
-
-  // Row 3: Title row
-  result.push(['Count of Ticket No', 'Column Labels', ...Array(wipCols.length).fill('')]);
-
-  // Row 4: Header row — "Row Labels", then each WIP aging value, then "Grand Total"
+  // Row 2: Header row — "Segment", "Row Labels", then each WIP aging value, then "Grand Total"
   const headerRow: (string | number)[] = [
+    'Segment',
     'Row Labels',
     ...wipCols.map(w => w === 'blank' ? '(blank)' : w),
     'Grand Total',
   ];
   result.push(headerRow);
 
-  // Data rows — one per Morning Report status
-  for (const status of statuses) {
-    const row: (string | number)[] = [status];
-    let rowTotal = 0;
-    for (const wip of wipCols) {
-      const count = countMap[status]?.[wip] || 0;
-      row.push(count > 0 ? count : '');
-      rowTotal += count;
+  // Data rows — one per (Segment × Morning Report status) with counts
+  for (const seg of segments) {
+    for (const status of statuses) {
+      const counts = countMap[seg]?.[status];
+      if (!counts) continue; // skip empty combos
+
+      const row: (string | number)[] = [seg, status];
+      let rowTotal = 0;
+      for (const wip of wipCols) {
+        const count = counts[wip] || 0;
+        row.push(count > 0 ? count : '');
+        rowTotal += count;
+      }
+      row.push(rowTotal);
+      result.push(row);
     }
-    row.push(rowTotal);
-    result.push(row);
   }
 
   // Grand Total row
-  const grandRow: (string | number)[] = ['Grand Total'];
+  const grandRow: (string | number)[] = ['', 'Grand Total'];
   let grandTotal = 0;
   for (const wip of wipCols) {
     let colSum = 0;
-    for (const status of statuses) {
-      colSum += countMap[status]?.[wip] || 0;
+    for (const seg of segments) {
+      for (const status of statuses) {
+        colSum += countMap[seg]?.[status]?.[wip] || 0;
+      }
     }
     grandRow.push(colSum > 0 ? colSum : '');
     grandTotal += colSum;
@@ -218,22 +232,22 @@ export function exportCallPlanXLSX(
     XLSX.utils.book_append_sheet(wb, ws2, 'Closed(OTB)');
   }
 
-  // 3. Pivot Table sheet — Morning Report × WIP Aging cross-tab
+  // 3. Pivot Table sheet — Segment + Morning Report × WIP Aging cross-tab
   const pivotData = buildPivotSheet(rows);
   const wsPivot = XLSX.utils.aoa_to_sheet(pivotData);
 
-  // Set column widths: first col wider for status labels, rest compact for numbers
-  const pivotColWidths: { wch: number }[] = [{ wch: 28 }];
-  const lastColIdx = (pivotData[3]?.length || 2) - 1;
-  for (let i = 1; i <= lastColIdx; i++) {
+  // Set column widths
+  const pivotColWidths: { wch: number }[] = [{ wch: 16 }, { wch: 28 }];
+  const lastColIdx = (pivotData[1]?.length || 3) - 1;
+  for (let i = 2; i <= lastColIdx; i++) {
     pivotColWidths.push({ wch: i === lastColIdx ? 12 : 6 });
   }
   wsPivot['!cols'] = pivotColWidths;
 
-  // Add autofilter on the header row (Row 4 = index 3) so dropdown arrows appear
+  // Add autofilter on the header row (Row 2) — covers Segment + Row Labels + WIP columns
   const lastColLetter = XLSX.utils.encode_col(lastColIdx);
-  const lastDataRow = pivotData.length; // includes grand total
-  wsPivot['!autofilter'] = { ref: `A4:${lastColLetter}${lastDataRow}` };
+  const lastDataRow = pivotData.length;
+  wsPivot['!autofilter'] = { ref: `A2:${lastColLetter}${lastDataRow}` };
 
   XLSX.utils.book_append_sheet(wb, wsPivot, 'Pivot Table');
 
