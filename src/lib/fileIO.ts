@@ -114,7 +114,7 @@ function buildPivotSheet(allRows: ClassifiedRow[]): (string | number)[][] {
   const wipSet = new Set<number>();
   const segmentSet = new Set<string>();
   // countMap[segment][status][wipKey] = count
-  const countMap: Record<string, Record<string, Record<number | 'blank', number>>> = {};
+  const countMap: Record<string, Record<string, Partial<Record<number | 'blank', number>>>> = {};
 
   for (const row of allRows) {
     const status = (row.morningStatus || '').trim();
