@@ -381,3 +381,107 @@ export function buildEngineerBreakdown(rows: ClassifiedRow[]): string[][] {
   }
   return result;
 }
+
+export interface ChennaiDashboardData {
+  leftMetrics: { label: string; value: string | number; bg?: string }[];
+  rightMetrics: { label: string; value: string | number; bg?: string }[];
+}
+
+export function buildChennaiDashboardData(rows: ClassifiedRow[], totalEngCount: number, reportDateStr: string): ChennaiDashboardData {
+  const activeRows = rows.filter(r => r.classification !== 'DROPPED');
+  
+  const totalOpen = activeRows.length;
+  
+  const fieldActionable = activeRows.filter(r => r.morningStatus.toLowerCase() === 'actionable').length;
+  const totalScheduled = activeRows.filter(r => r.morningStatus.toLowerCase() === 'to be scheduled' || (r.engg && r.engg.trim() !== '')).length;
+  
+  const activeEnggs = new Set(
+    activeRows
+      .filter(r => r.morningStatus.toLowerCase() === 'actionable')
+      .map(r => r.engg)
+      .filter(e => e && e.trim() !== '')
+  ).size;
+
+  const callAllocEngWise = activeEnggs > 0 ? (fieldActionable / activeEnggs).toFixed(1) : '0.0';
+
+  const printOpen2D = activeRows.filter(r => r.segment.toLowerCase() === 'print' && r.wipAging >= 2).length;
+  const printActionable2D = activeRows.filter(r => r.segment.toLowerCase() === 'print' && r.morningStatus.toLowerCase() === 'actionable' && r.wipAging >= 2).length;
+  const printScheduled2D = activeRows.filter(r => r.segment.toLowerCase() === 'print' && r.morningStatus.toLowerCase() === 'to be scheduled' && r.wipAging >= 2).length;
+
+  const open10D = activeRows.filter(r => r.wipAging > 10).length;
+  const actionable10D = activeRows.filter(r => r.morningStatus.toLowerCase() === 'actionable' && r.wipAging > 10).length;
+  const scheduled10D = activeRows.filter(r => r.morningStatus.toLowerCase() === 'to be scheduled' && r.wipAging > 10).length;
+
+  const mps1D = activeRows.filter(r => r.segment.toLowerCase() === 'mps' && r.wipAging > 1).length;
+  
+  const eodCallCloser = activeRows.filter(r => r.morningStatus.toLowerCase() === 'closed').length;
+  const newCallsReceived = activeRows.filter(r => r.classification === 'NEW').length;
+
+  const csoDaysInventory = eodCallCloser > 0 ? (totalOpen / eodCallCloser).toFixed(1) : '#DIV/0!';
+  
+  const engProductivity = totalEngCount > 0 ? (eodCallCloser / totalEngCount).toFixed(1) : '0.0';
+
+  const missedToSchedule = 0; // Default placeholder
+  const missedByEng = 0; // Default placeholder
+  const gTotalMissed = missedToSchedule + missedByEng;
+  const percentMissed = totalOpen > 0 ? ((gTotalMissed / totalOpen) * 100).toFixed(0) + '%' : '0%';
+  const closureAdherence = fieldActionable > 0 ? ((eodCallCloser / fieldActionable) * 100).toFixed(0) + '%' : '0%';
+
+  const leftMetrics = [
+    { label: 'Total open call', value: totalOpen },
+    { label: 'Total field Actionable call', value: fieldActionable },
+    { label: 'Total Call Scheduled', value: totalScheduled },
+    { label: 'Call Allocation Engineer Wise', value: callAllocEngWise },
+    { label: 'Print - Open call (=>2 days)', value: printOpen2D },
+    { label: 'Print - Actionable call (=>2 days)', value: printActionable2D },
+    { label: 'Print - Scheduled (=>2 days)', value: printScheduled2D },
+    { label: 'Open call (>10 days)', value: open10D },
+    { label: 'Actionable call (>10 days)', value: actionable10D },
+    { label: 'Call Scheduled (>10 days)', value: scheduled10D },
+    { label: 'MPS >1 Days', value: mps1D },
+    { label: 'EOD Call Closer', value: eodCallCloser, bg: 'bg-[#d9e1f2]' },
+    { label: 'New Calls Received', value: newCallsReceived, bg: 'bg-[#d9e1f2]' },
+    { label: 'CSO Days Inventory', value: csoDaysInventory, bg: 'bg-[#f4cccc]' },
+    { label: 'Total Eng Count', value: totalEngCount },
+    { label: 'Eng Avl in Field', value: activeEnggs },
+    { label: 'Engineers Productivity', value: engProductivity },
+    { label: 'Missed to schedule field action calls due to non avl of Eng', value: missedToSchedule },
+    { label: 'Missed by Eng to attend scheduled Call (High call allocation)', value: missedByEng, bg: 'bg-[#fce5cd]' },
+    { label: 'G Total (Missed to schedule & Attend Daily basis)', value: gTotalMissed },
+    { label: '% - Missed to schedule & Attend Daily call', value: percentMissed, bg: 'bg-[#eeeeee]' },
+    { label: 'Closure Adherence', value: closureAdherence, bg: 'bg-[#ffd966]' },
+  ];
+
+  // Right metrics NAF
+  const flexBackend = activeRows.filter(r => r.morningStatus.toLowerCase().includes('part')).length;
+  const ssc = activeRows.filter(r => r.morningStatus.toLowerCase() === 'ssc pending').length;
+  const hpBackend = activeRows.filter(r => {
+    const ms = r.morningStatus.toLowerCase();
+    return ms.includes('elevate') || ms.includes('tech support') || ms.includes('yank');
+  }).length;
+  const obsCustomer = activeRows.filter(r => r.morningStatus.toLowerCase() === 'under observation').length;
+  const cuPending = activeRows.filter(r => {
+    const ms = r.morningStatus.toLowerCase();
+    return ms.includes('cx') || ms.includes('visit') || ms.includes('cancel');
+  }).length;
+  const physicalClosed = activeRows.filter(r => r.morningStatus.toLowerCase() === 'closed').length;
+  const nonActionField = activeRows.filter(r => r.morningStatus.toLowerCase() === 'ct pending' || r.morningStatus.toLowerCase() === 'crt pending').length;
+  
+  const totalNaf = flexBackend + ssc + hpBackend + obsCustomer + cuPending + physicalClosed + nonActionField;
+  const sscPercent = totalNaf > 0 ? ((ssc / totalNaf) * 100).toFixed(0) + '%' : '0%';
+
+  const rightMetrics = [
+    { label: 'Date', value: reportDateStr.split('-').reverse().join('-'), bg: 'bg-[#e6b8af]' },
+    { label: 'Non Action-Field', value: nonActionField > 0 ? nonActionField : '' },
+    { label: 'Flex Backend', value: flexBackend > 0 ? flexBackend : '' },
+    { label: 'SSC', value: ssc > 0 ? ssc : '' },
+    { label: 'HP Backend', value: hpBackend > 0 ? hpBackend : '' },
+    { label: 'OBS-Customer', value: obsCustomer > 0 ? obsCustomer : '' },
+    { label: 'Cu Pending', value: cuPending > 0 ? cuPending : '' },
+    { label: 'Physical Closed', value: physicalClosed > 0 ? physicalClosed : '' },
+    { label: 'Total NAF', value: totalNaf, bg: 'bg-[#eeeeee]' },
+    { label: 'SSC%', value: sscPercent, bg: 'bg-[#e6b8af]' },
+  ];
+
+  return { leftMetrics, rightMetrics };
+}

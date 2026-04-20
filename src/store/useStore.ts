@@ -63,8 +63,8 @@ interface AppState {
   updateRow: (ticketNo: string, field: keyof ClassifiedRow, value: string | number) => void;
 
   // Active tab in review
-  activeTab: 'all' | 'actionable' | 'planned' | 'trade' | 'pending' | 'new' | 'dropped';
-  setActiveTab: (tab: 'all' | 'actionable' | 'planned' | 'trade' | 'pending' | 'new' | 'dropped') => void;
+  activeTab: 'all' | 'actionable' | 'planned' | 'trade' | 'pending' | 'new' | 'dropped' | 'chennai_dashboard';
+  setActiveTab: (tab: 'all' | 'actionable' | 'planned' | 'trade' | 'pending' | 'new' | 'dropped' | 'chennai_dashboard') => void;
 
   // Engineer list (configurable)
   engineers: string[];

@@ -254,7 +254,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
                       <span>{col}</span>
                       <button 
                         onClick={(e) => { e.stopPropagation(); setFilterSearchQuery(''); setActiveFilterColumn(activeFilterColumn === col ? null : col); }}
-                        className={`p-1 rounded transition-colors ${columnFilters[col]?.size > 0 ? 'bg-blue-500/20 text-blue-400 opacity-100' : 'text-gray-500 hover:bg-gray-700 hover:text-white opacity-0 group-hover/th:opacity-100'}`}
+                        className={`p-1 rounded transition-colors ${columnFilters[col]?.size > 0 ? 'bg-blue-500/20 text-blue-400 opacity-100' : 'text-gray-500 hover:bg-gray-700 hover:text-gray-100 opacity-0 group-hover/th:opacity-100'}`}
                       >
                         <Filter className="h-3 w-3" />
                       </button>
@@ -308,7 +308,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
                            })}
                         </div>
                         <div className="p-2 border-t border-gray-800 flex justify-end gap-2 bg-gray-900/50">
-                          <button onClick={() => setActiveFilterColumn(null)} className="px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-white transition-colors">Cancel</button>
+                          <button onClick={() => setActiveFilterColumn(null)} className="px-3 py-1.5 text-xs font-bold text-gray-400 hover:text-gray-100 transition-colors">Cancel</button>
                           <button onClick={() => setActiveFilterColumn(null)} className="px-4 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg shadow-lg shadow-blue-900/20 transition-all">OK</button>
                         </div>
                       </div>
@@ -330,7 +330,7 @@ export default function DataTable({ data, isDroppedTab, onAddRow }: DataTablePro
                   </td>
 
                   <td className="px-4 py-3 text-gray-200">{row.month || '-'}</td>
-                  <td className="px-4 py-3 font-mono text-white font-bold">{row.ticketNo}</td>
+                  <td className="px-4 py-3 font-mono text-gray-100 font-bold">{row.ticketNo}</td>
                   <td className="px-4 py-3 text-gray-100">{row.caseId}</td>
                   <td className="px-4 py-3 text-purple-300 font-bold">{row.woOtcCode || '-'}</td>
                   <td className="px-4 py-3 truncate max-w-[300px] text-gray-100 font-medium" title={row.product}>{row.product}</td>

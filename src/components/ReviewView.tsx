@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { useStore } from "../store/useStore";
 import DataTable from "./DataTable";
 import {
@@ -20,7 +20,7 @@ import {
   detectCities,
   findOpenCallSheet,
 } from "../lib/fileIO";
-import { processCallPlan } from "../lib/engine";
+import { processCallPlan, buildChennaiDashboardData } from "../lib/engine";
 import type { ClassifiedRow } from "../lib/types";
 import { MORNING_STATUS_OPTIONS } from "../lib/types";
 import {
@@ -322,6 +322,14 @@ export default function ReviewView() {
       parts: "",
     });
   };
+
+  const chennaiData = useMemo(() => {
+    return buildChennaiDashboardData(
+      rows,
+      engineers.filter((e) => e.trim() !== "").length,
+      reportDate
+    );
+  }, [rows, engineers, reportDate]);
 
   const totalFlexCalls = flexData?.length || 0;
   const boxMetrics = [
@@ -768,6 +776,77 @@ export default function ReviewView() {
             </div>
           </div>
 
+          {/* Chennai Dashboard (Permanently Visible) */}
+          <div className="mt-4 mb-4 max-w-[1400px] mx-auto w-full">
+            <div className="flex flex-col lg:flex-row gap-4 items-start">
+              {/* Left Table Dashboard */}
+              <div className="flex-[2] glass-panel rounded-2xl overflow-hidden shadow-lg border border-gray-700/30 dark:border-gray-600/30">
+                <div className="flex items-center justify-between border-b border-gray-700/30 bg-gray-500/10 px-5 py-3.5">
+                  <div className="font-black text-sm tracking-widest text-[#3b82f6] uppercase flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] animate-pulse"></span>
+                    Chennai Dashboard
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Today</span>
+                    <span className="text-xs font-black text-gray-900 dark:text-gray-100 bg-gray-500/20 px-2 py-1 rounded-md border border-gray-500/30 text-center min-w-[80px]">
+                      {reportDate.split('-').reverse().join('-')}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                  {chennaiData.leftMetrics.map((m, i) => {
+                    let customStyle = "";
+                    let valStyle = "text-gray-900 dark:text-gray-100";
+                    if (m.bg?.includes('f4cccc')) { customStyle = "bg-red-500/10 md:border-l-4 border-red-500/70"; valStyle = "text-red-700 dark:text-red-400"; }
+                    else if (m.bg?.includes('fce5cd')) { customStyle = "bg-orange-500/10 md:border-l-4 border-orange-500/70"; valStyle = "text-orange-700 dark:text-orange-400"; }
+                    else if (m.bg?.includes('ffd966')) { customStyle = "bg-yellow-500/10 md:border-l-4 border-yellow-500/70"; valStyle = "text-yellow-700 dark:text-yellow-400"; }
+                    else if (m.bg?.includes('eeeeee')) { customStyle = "bg-gray-500/10 md:border-l-4 border-gray-500/40"; valStyle = "text-gray-700 dark:text-gray-200"; }
+                    else if (m.bg?.includes('d9e1f2')) { customStyle = "bg-blue-500/10 md:border-l-4 border-blue-500/70"; valStyle = "text-blue-700 dark:text-blue-400"; }
+
+                    return (
+                      <div key={i} className={`flex justify-between items-center px-5 py-2.5 border-b border-gray-500/20 md:[&:nth-child(even)]:border-l hover:bg-gray-500/10 transition-colors ${customStyle}`}>
+                        <div className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate pr-3">{m.label}</div>
+                        <div className={`text-sm font-black tabular-nums ${valStyle}`}>
+                          {m.value}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Right NAF Table */}
+              <div className="flex-1 glass-panel rounded-2xl overflow-hidden shadow-lg border border-gray-700/30 dark:border-gray-600/30 min-w-[320px]">
+                <div className="flex items-center justify-between border-b border-gray-700/30 bg-gray-500/10 px-5 py-3.5">
+                  <div className="font-black text-sm tracking-widest text-[#a855f7] uppercase flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]"></span>
+                    NAF Summary
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  {chennaiData.rightMetrics.map((m, i) => {
+                     if (m.label === 'Date') return null;
+                     
+                     let customStyle = "";
+                     let valStyle = "text-gray-900 dark:text-gray-100";
+                     
+                     if (m.bg?.includes('eeeeee')) { customStyle = "bg-gray-500/20 border-l-4 border-gray-500/60"; valStyle = "text-black dark:text-white"; }
+                     else if (m.bg?.includes('e6b8af')) { customStyle = "bg-purple-500/10 border-l-4 border-purple-500/70"; valStyle = "text-purple-700 dark:text-purple-400"; }
+
+                     return (
+                      <div key={i} className={`flex justify-between items-center px-5 py-3 border-b border-gray-500/20 hover:bg-gray-500/10 transition-colors last:border-b-0 ${customStyle}`}>
+                        <div className="text-xs font-bold text-gray-700 dark:text-gray-300">{m.label}</div>
+                        <div className={`text-sm font-black tabular-nums ${valStyle}`}>
+                          {m.value}
+                        </div>
+                      </div>
+                     );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="glass-panel rounded-xl flex flex-col overflow-hidden border border-gray-700/50">
             <div className="flex bg-gray-900 border-b border-gray-700/80">
               {(
@@ -778,13 +857,13 @@ export default function ReviewView() {
                   "trade",
                   "pending",
                   "new",
-                  "dropped",
+                  "dropped"
                 ] as const
               ).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-3 text-[11px] font-black uppercase tracking-widest relative ${activeTab === tab ? "text-white" : "text-gray-500 hover:text-gray-300"}`}
+                  className={`px-5 py-3 text-[11px] font-black uppercase tracking-widest relative ${activeTab === tab ? "text-gray-100" : "text-gray-500 hover:text-gray-300"}`}
                 >
                   {tab === "all"
                     ? `${selectedCity} Open Calls`
@@ -892,10 +971,10 @@ export default function ReviewView() {
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 -rotate-45 translate-x-32 -translate-y-32 blur-3xl pointer-events-none" />
               <div className="flex items-center gap-5">
                 <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
-                  <PlusCircle className="h-6 w-6 text-white" />
+                  <PlusCircle className="h-6 w-6 text-gray-100" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter leading-none mb-1">
+                  <h2 className="text-2xl font-black text-gray-100 uppercase italic tracking-tighter leading-none mb-1">
                     New Manual Entry
                   </h2>
                   <p className="text-[10px] font-bold text-white/50 uppercase tracking-[0.3em]">
@@ -907,7 +986,7 @@ export default function ReviewView() {
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 hover:bg-white/10 rounded-full transition-all hover:rotate-90"
               >
-                <X className="h-6 w-6 text-white/80" />
+                <X className="h-6 w-6 text-gray-400" />
               </button>
             </div>
 
@@ -1147,7 +1226,7 @@ export default function ReviewView() {
             <div className="px-10 py-8 bg-gray-950/50 border-t border-white/5 flex items-center justify-between">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-all"
+                className="px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-100 transition-all"
               >
                 Cancel Entry
               </button>
@@ -1174,7 +1253,7 @@ export default function ReviewView() {
                   <History className="h-5 w-5 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-white uppercase italic tracking-tighter leading-none mb-1">
+                  <h3 className="text-lg font-black text-gray-100 uppercase italic tracking-tighter leading-none mb-1">
                     Upload History
                   </h3>
                   <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-bold">
@@ -1215,7 +1294,7 @@ export default function ReviewView() {
                         )}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-gray-200 mb-1 group-hover:text-white transition-colors">
+                        <h4 className="text-sm font-bold text-gray-200 mb-1 group-hover:text-gray-100 transition-colors">
                           {file.original_name}
                         </h4>
                         <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-600">
