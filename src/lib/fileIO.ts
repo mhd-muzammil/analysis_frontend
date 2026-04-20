@@ -224,10 +224,16 @@ export function exportCallPlanXLSX(
 
   // Set column widths: first col wider for status labels, rest compact for numbers
   const pivotColWidths: { wch: number }[] = [{ wch: 28 }];
-  for (let i = 1; i < (pivotData[3]?.length || 2); i++) {
-    pivotColWidths.push({ wch: i === (pivotData[3]?.length || 2) - 1 ? 12 : 6 });
+  const lastColIdx = (pivotData[3]?.length || 2) - 1;
+  for (let i = 1; i <= lastColIdx; i++) {
+    pivotColWidths.push({ wch: i === lastColIdx ? 12 : 6 });
   }
   wsPivot['!cols'] = pivotColWidths;
+
+  // Add autofilter on the header row (Row 4 = index 3) so dropdown arrows appear
+  const lastColLetter = XLSX.utils.encode_col(lastColIdx);
+  const lastDataRow = pivotData.length; // includes grand total
+  wsPivot['!autofilter'] = { ref: `A4:${lastColLetter}${lastDataRow}` };
 
   XLSX.utils.book_append_sheet(wb, wsPivot, 'Pivot Table');
 
