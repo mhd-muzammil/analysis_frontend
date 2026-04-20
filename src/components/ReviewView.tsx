@@ -20,7 +20,7 @@ import {
   detectCities,
   findOpenCallSheet,
 } from "../lib/fileIO";
-import { processCallPlan, buildChennaiDashboardData } from "../lib/engine";
+import { processCallPlan, buildChennaiDashboardData, buildEngineerAttendanceData } from "../lib/engine";
 import type { ClassifiedRow } from "../lib/types";
 import { MORNING_STATUS_OPTIONS } from "../lib/types";
 import {
@@ -330,6 +330,11 @@ export default function ReviewView() {
       reportDate
     );
   }, [rows, engineers, reportDate]);
+
+  const engineerAttendanceData = useMemo(() => {
+    return buildEngineerAttendanceData(rows);
+  }, [rows]);
+
 
   const totalFlexCalls = flexData?.length || 0;
   const boxMetrics = [
@@ -846,6 +851,53 @@ export default function ReviewView() {
               </div>
             </div>
           </div>
+
+          {/* Engineer Attendance Data */}
+          {engineerAttendanceData.list.length > 0 && (
+            <div className="glass-panel rounded-2xl overflow-hidden shadow-lg border border-gray-700/30 mb-6 max-w-[1400px] mx-auto w-full">
+              <div className="flex items-center justify-center border-b border-gray-300 bg-white px-5 py-2">
+                <span className="text-sm font-black text-black border-2 border-black px-4 py-0.5">
+                  Date {reportDate.split('-').reverse().join('-')}
+                </span>
+              </div>
+              <div className="w-full overflow-x-auto bg-white">
+                <table className="w-full text-center text-sm whitespace-nowrap border-collapse border border-black">
+                  <thead className="bg-[#f4b084] text-black font-bold text-xs">
+                    <tr>
+                      <th className="px-4 py-2 border border-black">S.No</th>
+                      <th className="px-4 py-2 border border-black">Engineer Name</th>
+                      <th className="px-4 py-2 border border-black">Assigned</th>
+                      <th className="px-4 py-2 border border-black">Attended</th>
+                      <th className="px-4 py-2 border border-black">Closed</th>
+                      <th className="px-4 py-2 border border-black text-center whitespace-normal min-w-[80px]">Part<br/>ordered</th>
+                      <th className="px-4 py-2 border border-black text-center whitespace-normal min-w-[100px]">Under<br/>Observation</th>
+                      <th className="px-4 py-2 border border-black text-center whitespace-normal min-w-[100px]">CX<br/>Reschedule</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white text-black text-xs font-bold">
+                    {engineerAttendanceData.list.map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="px-4 py-2 border border-black">{row.sNo}</td>
+                        <td className="px-4 py-2 border border-black text-left">{row.engineerName}</td>
+                        <td className="px-4 py-2 border border-black">{row.assigned || ''}</td>
+                        <td className="px-4 py-2 border border-black">{row.attended || ''}</td>
+                        <td className="px-4 py-2 border border-black">{row.closed || ''}</td>
+                        <td className="px-4 py-2 border border-black">{row.partOrdered || ''}</td>
+                        <td className="px-4 py-2 border border-black">{row.underObservation || ''}</td>
+                        <td className="px-4 py-2 border border-black">{row.cxReschedule || ''}</td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan={2} className="border border-black bg-white"></td>
+                      <td className="px-4 py-2 border border-black font-black text-center box-border">Total Attended</td>
+                      <td className="px-4 py-2 border border-black font-black">{engineerAttendanceData.totalAttended}</td>
+                      <td colSpan={4} className="border border-black bg-white"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <div className="glass-panel rounded-xl flex flex-col overflow-hidden border border-gray-700/50">
             <div className="flex bg-gray-900 border-b border-gray-700/80">
