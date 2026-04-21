@@ -394,7 +394,8 @@ export default function ReviewView() {
         rows
           .filter((r) => r.morningStatus.toLowerCase() === "actionable")
           .map((r) => r.engg)
-          .filter((e) => e && e.trim() !== ""),
+          .filter((e) => e && e.trim() !== "")
+          .map((e) => e.trim().toLowerCase()),
       ).size,
     },
     { label: "Open Calls", value: rows.length },
@@ -531,21 +532,21 @@ export default function ReviewView() {
     },
   ];
 
-  const sortedEnggs = Object.entries(
-    rows.reduce(
-      (acc, row) => {
-        if (
-          row.engg &&
-          row.engg.trim() !== "" &&
-          row.morningStatus.toLowerCase() === "actionable"
-        ) {
-          acc[row.engg] = (acc[row.engg] || 0) + 1;
+  const sortedEnggs = (() => {
+    const engMap: Record<string, { displayName: string; count: number }> = {};
+    for (const row of rows) {
+      if (row.engg && row.engg.trim() !== "") {
+        const key = row.engg.trim().toLowerCase();
+        if (!engMap[key]) {
+          engMap[key] = { displayName: row.engg.trim(), count: 0 };
         }
-        return acc;
-      },
-      {} as Record<string, number>,
-    ),
-  ).sort((a, b) => b[1] - a[1]);
+        engMap[key].count += 1;
+      }
+    }
+    return Object.values(engMap)
+      .map((v) => [v.displayName, v.count] as [string, number])
+      .sort((a, b) => b[1] - a[1]);
+  })();
 
   return (
     <div className="w-full flex-col space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-500">
