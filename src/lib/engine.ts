@@ -514,18 +514,21 @@ export function buildSummaryTable(
 
 export function buildEngineerBreakdown(rows: ClassifiedRow[]): string[][] {
   const outputRows = rows.filter((r) => r.classification !== "DROPPED");
-  const engCounts = new Map<string, number>();
+  const engCounts = new Map<string, { displayName: string; count: number }>();
   for (const row of outputRows) {
     if (row.engg && row.engg.trim() !== "") {
-      const name = row.engg.trim();
-      engCounts.set(name, (engCounts.get(name) ?? 0) + 1);
+      const key = row.engg.trim().toLowerCase();
+      if (!engCounts.has(key)) {
+        engCounts.set(key, { displayName: row.engg.trim(), count: 0 });
+      }
+      engCounts.get(key)!.count++;
     }
   }
-  const sorted = [...engCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const sorted = [...engCounts.values()].sort((a, b) => b.count - a.count);
   if (sorted.length === 0) return [];
   const result: string[][] = [["Engineer", "Allocated Calls"]];
-  for (const [eng, count] of sorted) {
-    result.push([eng, String(count)]);
+  for (const { displayName, count } of sorted) {
+    result.push([displayName, String(count)]);
   }
   return result;
 }
@@ -557,7 +560,8 @@ export function buildChennaiDashboardData(
     activeRows
       .filter((r) => r.morningStatus.toLowerCase() === "actionable")
       .map((r) => r.engg)
-      .filter((e) => e && e.trim() !== ""),
+      .filter((e) => e && e.trim() !== "")
+      .map((e) => e.trim().toLowerCase()),
   ).size;
 
   const callAllocEngWise =
@@ -749,6 +753,7 @@ export function buildEngineerAttendanceData(
   const engMap = new Map<
     string,
     {
+      displayName: string;
       assigned: number;
       closed: number;
       partOrdered: number;
@@ -759,9 +764,10 @@ export function buildEngineerAttendanceData(
 
   for (const row of outputRows) {
     if (row.engg && row.engg.trim() !== "") {
-      const name = row.engg.trim();
-      if (!engMap.has(name)) {
-        engMap.set(name, {
+      const key = row.engg.trim().toLowerCase();
+      if (!engMap.has(key)) {
+        engMap.set(key, {
+          displayName: row.engg.trim(),
           assigned: 0,
           closed: 0,
           partOrdered: 0,
@@ -769,7 +775,7 @@ export function buildEngineerAttendanceData(
           cxReschedule: 0,
         });
       }
-      const data = engMap.get(name)!;
+      const data = engMap.get(key)!;
       data.assigned++;
 
       const ms = row.morningStatus.toLowerCase().trim();
@@ -790,12 +796,12 @@ export function buildEngineerAttendanceData(
   const list: EngineerAttendanceRow[] = [];
   let totalAttended = 0;
 
-  for (const [engineerName, data] of engMap.entries()) {
+  for (const [, data] of engMap.entries()) {
     const attended = data.assigned - data.cxReschedule;
     const finalAttended = attended > 0 ? attended : 0;
     list.push({
       sNo: index++,
-      engineerName,
+      engineerName: data.displayName,
       assigned: data.assigned,
       attended: finalAttended,
       closed: data.closed,
