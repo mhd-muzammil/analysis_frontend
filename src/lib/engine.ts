@@ -78,6 +78,26 @@ export function isValidWO(id: string): boolean {
   return /^WO-\d{9}$/i.test(trimmed) || /^\d{9}$/.test(trimmed);
 }
 
+function canonicalWO(wo: unknown): string {
+  return wo?.toString().trim().toUpperCase() ?? "";
+}
+
+function extractDateFromPartnerAccept(value: unknown): string {
+  if (!value) return "NA";
+
+  const match = value.toString().match(/\d{1,2}\/\d{1,2}\/\d{4}/);
+  return match ? match[0] : "NA";
+}
+
+function readPartnerAcceptFromRaw(raw: Record<string, unknown>): unknown {
+  return (
+    raw["Partner Accept"] ??
+    raw["PartnerAccept"] ??
+    raw["partnerAccept"] ??
+    raw["partner accept"]
+  );
+}
+
 export function isValidCase(id: string): boolean {
   const trimmed = (id ?? "").trim();
   return /^\d{8,10}$/.test(trimmed) || trimmed.length > 4; // Case IDs are usually 8-10 digits
@@ -259,7 +279,7 @@ export function processCallPlan(
   const format = detectFlexFormat(flexRaw);
   const targetCity = city.trim().toLowerCase();
 
-  const flexMap = new Map<string, FlexRow>();
+  const flexMap = new Map<string, { row: FlexRow; partnerAccept: unknown }>();
   let flexTotal = 0;
   for (const raw of flexRaw) {
     flexTotal++;
@@ -280,43 +300,44 @@ export function processCallPlan(
       continue;
     }
 
-    flexMap.set(row.ticketNo.toUpperCase(), row);
+    const wo = canonicalWO(row.ticketNo);
+    if (wo) {
+      flexMap.set(wo, {
+        row,
+        partnerAccept: readPartnerAcceptFromRaw(raw),
+      });
+    }
   }
 
-  const rtplMap = new Map<string, CallPlanRow>();
+  const rtplMap = new Map<
+    string,
+    { row: CallPlanRow; partnerAccept: unknown }
+  >();
   for (const raw of yesterdayRaw) {
     const row = normalizeCallPlanRow(raw);
     if (!isValidWO(row.ticketNo)) continue;
-    rtplMap.set(row.ticketNo.toUpperCase(), row);
+    const wo = canonicalWO(row.ticketNo);
+    if (wo) {
+      rtplMap.set(wo, {
+        row,
+        partnerAccept: readPartnerAcceptFromRaw(raw),
+      });
+    }
   }
 
   const pending: ClassifiedRow[] = [];
   const newRows: ClassifiedRow[] = [];
   const dropped: ClassifiedRow[] = [];
 
-  // Identify Pending and New
-  for (const [ticketNo, flexRow] of flexMap) {
-    const yesterday = rtplMap.get(ticketNo);
-    if (yesterday) {
-      // Comparison logic for WIP Changed status
-      const wipChanged =
-        yesterday.flexStatus.toLowerCase() !== flexRow.flexStatus.toLowerCase()
-          ? "Yes"
-          : "No";
+  const allWOs = new Set([...flexMap.keys(), ...rtplMap.keys()]);
+  for (const ticketNo of allWOs) {
+    const flexEntry = flexMap.get(ticketNo);
+    const yestEntry = rtplMap.get(ticketNo);
+    const flexRow = flexEntry?.row;
+    const yesterday = yestEntry?.row;
 
-      pending.push({
-        ...yesterday,
-        wipAging:
-          flexRow.wipAgingRaw > 0 ? flexRow.wipAgingRaw : yesterday.wipAging,
-        eveningStatus: "", // Clear evening status for the new day
-        hpOwner: flexRow.hpOwner || yesterday.hpOwner,
-        flexStatus: flexRow.flexStatus,
-        wipChanged,
-        classification: "PENDING",
-        woOtcCode: flexRow.woOtcCode || yesterday.woOtcCode,
-      });
-    } else {
-      // New row logic
+    // NEW: present only in flex
+    if (flexRow && !yesterday) {
       let aging: number;
       if (format === "xlsx" && flexRow.wipAgingRaw > 0) {
         aging = flexRow.wipAgingRaw;
@@ -325,20 +346,18 @@ export function processCallPlan(
       }
 
       newRows.push({
-        month: reportDate
-          .toLocaleDateString("en-GB", { month: "short", year: "2-digit" })
-          .replace(" ", "-"),
+        month: extractDateFromPartnerAccept(flexEntry.partnerAccept),
         ticketNo: flexRow.ticketNo,
         woOtcCode: flexRow.woOtcCode,
         caseId: flexRow.caseId,
         product: flexRow.productName,
         wipAging: aging,
-        location: flexRow.workLocation || flexRow.customerCity,
+        location: flexRow.customerCity || "NA",
         segment: mapSegment(flexRow.woOtcCode, flexRow.businessSegment),
         hpOwner: flexRow.hpOwner,
         flexStatus: flexRow.flexStatus,
         wipChanged: "New",
-        morningStatus: "To be scheduled", // Default for new rows
+        morningStatus: "To Be Scheduled",
         eveningStatus: "",
         currentStatusTAT: "",
         engg: "",
@@ -346,13 +365,46 @@ export function processCallPlan(
         parts: "",
         classification: "NEW",
       });
+      continue;
     }
-  }
 
-  // Identify Dropped (Closed)
-  for (const [ticketNo, row] of rtplMap) {
-    if (!flexMap.has(ticketNo)) {
-      dropped.push({ ...row, classification: "DROPPED" });
+    // CLOSED: present only in yesterday (kept as DROPPED classification for compatibility)
+    if (!flexRow && yesterday) {
+      dropped.push({
+        ...yesterday,
+        month: extractDateFromPartnerAccept(yestEntry.partnerAccept),
+        location: yesterday.location || "NA",
+        morningStatus: yesterday.morningStatus || "NA",
+        classification: "DROPPED",
+      });
+      continue;
+    }
+
+    // PENDING: present in both
+    if (flexRow && yesterday) {
+      pending.push({
+        // Start from flex-derived fields so OTC/HP Owner/Flex Status are retained.
+        month: extractDateFromPartnerAccept(
+          yestEntry.partnerAccept ?? flexEntry.partnerAccept,
+        ),
+        ticketNo: flexRow.ticketNo,
+        woOtcCode: flexRow.woOtcCode,
+        caseId: flexRow.caseId || yesterday.caseId,
+        product: flexRow.productName || yesterday.product,
+        location: yesterday.location || "NA",
+        segment: mapSegment(flexRow.woOtcCode, flexRow.businessSegment),
+        hpOwner: flexRow.hpOwner || yesterday.hpOwner,
+        flexStatus: flexRow.flexStatus || yesterday.flexStatus,
+        wipChanged: "No",
+        contactNo: cleanPhone(flexRow.customerPhoneNo) || yesterday.contactNo,
+        parts: yesterday.parts,
+        currentStatusTAT: yesterday.currentStatusTAT,
+        engg: yesterday.engg,
+        wipAging: (Number(yesterday.wipAging) || 0) + 1,
+        morningStatus: yesterday.morningStatus || "NA",
+        eveningStatus: "",
+        classification: "PENDING",
+      });
     }
   }
 
