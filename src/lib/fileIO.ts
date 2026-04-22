@@ -70,6 +70,7 @@ function rowToArray(row: ClassifiedRow): (string | number)[] {
     row.month,
     row.ticketNo,
     row.caseId,
+    row.woOtcCode,
     row.product,
     row.wipAging,
     row.location,
