@@ -11,7 +11,7 @@ import ActiveUsersIndicator from './components/ActiveUsersIndicator';
 function App() {
   const { step, isLoggedIn, username, logout, wsConnected, theme, toggleTheme } = useStore();
 
-  // Apply theme to document root
+ 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
